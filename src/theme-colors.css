@@ -1,0 +1,143 @@
+/* 
+html tło (najciemniejsze)
+  └── bg-primary (content area)
+        └── bg-secondary (karty, panele, elementy)
+ */
+
+:root {
+  /* Że używamy jasnego i ciemnego motywu */
+  color-scheme: light dark;
+  
+  /* PALETA KOLORÓW - JASNY MOTYW */
+  
+  /* Tła */
+  --bg-primary:oklch(94% 0.002 286.32);
+  --bg-secondary:
+    oklch(92.8% 0.0167 265.755)
+    /* oklch(92.8% 0.006 265.755) */
+    ; 
+ 
+  /* Nawigacja */
+  --nav-bg: oklch(27.9% 0.041 260.031);        /* slate-800 - stonowany */
+  /* Tło dla pola input w nav bar - nieco jaśniejsza wersja tła*/
+  --nav-input-bg: color-mix(in oklch, var(--nav-bg), white 5%);
+  --nav-input-border: oklch(48% 0.1 264);          /* border input in nav */
+  --nav-input-text: oklch(98% 0.005 261);        /* NOWE - jasny tekst dla ciemnego nav */
+  --nav-input-placeholder: oklch(65% 0.03 264);  /* NOWE - jasny placeholder */
+  --nav-border: oklch(35% 0.045 260);          /* subtelny border */
+  --nav-item-active: oklch(42% 0.15 264);       /* stonowany niebieski */
+  --nav-item-hover: oklch(34% 0.06 260.031);   /* hover z odcieniem */
+  --nav-sub-hover: oklch(0.3898 0.0915 260.031);  /* hover elementu rozwijanego menu */
+
+  /* Input */
+  --input-bg: oklch(95% 0.01 264);             /* jasne tło input */
+  --input-bg-dim: oklch(90% 0.01 264);         /* nieco ciemniejsze tło input */
+  --input-border: oklch(75% 0.05 264);         /* border input */
+  --input-text: oklch(20% 0.02 261);           /* NOWE - ciemny tekst dla jasnego tła */
+  --input-placeholder: oklch(60% 0.03 261);    /* NOWE - placeholder */
+  
+  /* Teksty */
+  --text-primary: oklch(20% 0.02 261);         /* główny tekst */
+  --text-secondary: oklch(45% 0.03 261);       /* drugorzędny tekst */
+  --text-heading: oklch(15% 0.025 261);        /* nagłówki */
+  --text-muted: oklch(60% 0.03 261);           /* przygaszony tekst (email, subtle) */
+  --text-on-dark: oklch(98% 0.005 261);        /* tekst na ciemnym tle (navbar) */
+  
+  /* Akcenty */
+  --accent: oklch(48.8% 0.243 264.376);        /* blue-700 */
+  --accent-hover: oklch(54.6% 0.245 262.881);  /* blue-600 */
+  
+  /* Obramowania */
+  --border-default: oklch(85% 0.01 261);
+  --border-focus: oklch(62.3% 0.214 259.815);  /* blue-500 */
+  --border-strong: oklch(70% 0.02 261);
+  --border-stronger: oklch(55.4% 0.046 257.417);
+
+  /* Stany walidacji - JASNY MOTYW */
+  --error-text: oklch(60% 0.18 25);        /* czerwony tekst */
+  --error-border: oklch(55% 0.22 25);      /* czerwone obramowanie */
+  --error-bg: oklch(95% 0.05 25);          /* subtelne czerwone tło */
+  
+  --success-text: oklch(55% 0.15 145);     /* zielony tekst */
+  --success-border: oklch(50% 0.18 145);   /* zielone obramowanie */
+  --success-bg: oklch(95% 0.05 145);       /* subtelne zielone tło */
+
+  /* Tmp */
+  --hadlowiec-text: oklch(70.4% 0.14 182.503);
+
+  /* Warning (pomarańczowy) */
+  --warning-text:
+  oklch(65% 0.18 55)
+  /* oklch(82.8% 0.189 84.429) */
+  ;  
+  --warning-border: oklch(60% 0.20 55);
+  --warning-bg: oklch(95% 0.05 55);
+
+  /* Info (jasny niebieski) */
+  --info-text: oklch(60% 0.15 230);
+  --info-border: oklch(55% 0.18 230);
+  --info-bg: oklch(95% 0.05 230);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* PALETA KOLORÓW - CIEMNY MOTYW */
+    
+    /* Tła */
+    --bg-primary: oklch(20.8% 0.042 265.755);    /* slate-900 - główne tło */    
+    --bg-secondary: oklch(37.3% 0.034 264.542);  /* ~gray-700 - karty */
+    
+    
+    /* Modale, karty, etc. - dodatkowo */
+    --bg-modal: oklch(25% 0.042 265.755);
+
+    /* Nawigacja - identyczna jak dla jasnego motywu - nie duplikujemy */    
+    
+    /* Input */
+    --input-bg:
+    oklch(33% 0.041 260.031)
+    /* oklch(37.3% 0.05 264.542) */
+    ;             /* slate-700 */  
+    /* --input-bg: oklch(35% 0.08 264);              półprzezroczyste ciemne */
+    --input-border: oklch(48% 0.1 264);          /* border input */
+    --input-text: oklch(92% 0.005 261);          /* NOWE - jasny tekst dla ciemnego tła */
+    --input-placeholder: oklch(65% 0.03 264);    /* NOWE - placeholder */
+    
+    /* Teksty */
+    --text-primary: oklch(92% 0.005 261);        /* jasny tekst na ciemnym */
+    --text-secondary: oklch(70% 0.02 261);       /* drugorzędny */
+    --text-heading: oklch(96% 0.003 261);        /* nagłówki */
+    --text-muted: oklch(65% 0.03 264);           /* przygaszony (indigo-300 equivalent) */
+    --text-on-dark: oklch(98% 0.005 261);        /* tekst na navbar */
+    
+    /* Akcenty */
+    --accent: oklch(42.4% 0.199 265.638);        /* blue-800 */
+    --accent-hover: oklch(48.8% 0.243 264.376);  /* blue-700 */
+    
+    /* Obramowania */
+    --border-default: oklch(48% 0.03 261); 
+    --border-focus: oklch(62.3% 0.214 259.815);  /* blue-500 */
+    --border-strong: oklch(60% 0.03 261);
+
+    /* Stany walidacji - CIEMNY MOTYW */
+    --error-text: oklch(70% 0.18 25);      /* jaśniejszy czerwony */
+    --error-border: oklch(60% 0.22 25);    /* czerwone obramowanie */
+    --error-bg: oklch(25% 0.05 25);        /* ciemne czerwone tło */
+    
+    --success-text: oklch(65% 0.15 145);   /* jaśniejszy zielony */
+    --success-border: oklch(55% 0.18 145); /* zielone obramowanie */
+    --success-bg: oklch(25% 0.05 145);     /* ciemne zielone tło */
+
+        /* Warning */
+    --warning-text: oklch(75% 0.18 55);
+    --warning-border: oklch(65% 0.20 55);
+    --warning-bg: oklch(25% 0.05 55);
+
+    /* Info */
+    --info-text: oklch(70% 0.15 230);
+    --info-border: oklch(60% 0.18 230);
+    --info-bg: oklch(25% 0.05 230);
+  }
+}
+
+

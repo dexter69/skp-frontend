@@ -12,7 +12,8 @@ export default defineConfig({
 			'/api': {
 				target: 'https://skp2x.ddev.site',
 				changeOrigin: true,
-				secure: false
+				secure: false,
+				rewrite: (path) => path.replace(/^\/api/, '')
 			}
 		}
 	}

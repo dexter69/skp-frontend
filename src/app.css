@@ -1,1 +1,80 @@
 @import "tailwindcss";
+@import "./theme-colors.css";
+
+@theme {
+  --font-sans: InterVariable, sans-serif;
+  --font-sans--font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+
+  --color-nav-bg: var(--nav-bg);
+  --color-nav-input-bg: var(--nav-input-bg);
+  --color-nav-input-border: var(--nav-input-border);
+  --color-nav-input-text: var(--nav-input-text);
+  --color-nav-input-placeholder: var(--nav-input-placeholder);
+  --color-nav-border: var(--nav-border);
+  --color-nav-item-active: var(--nav-item-active);
+  --color-nav-item-hover: var(--nav-item-hover);
+  --color-nav-sub-hover: var(--nav-sub-hover);
+
+  --color-input-bg: var(--input-bg);
+  --color-input-bg-dim: var(--input-bg-dim);
+  --color-input-border: var(--input-border);
+  --color-input-text: var(--input-text);
+  --color-input-placeholder: var(--input-placeholder);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-heading: var(--text-heading);
+  --color-text-muted: var(--text-muted);
+  --color-text-on-dark: var(--text-on-dark);
+
+  --color-hadlowiec-text: var(--hadlowiec-text);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+
+  --color-border-default: var(--border-default);
+  --color-border-focus: var(--border-focus);
+  --color-border-strong: var(--border-strong);
+  --color-border-stronger: var(--border-stronger);
+
+  --color-error-text: var(--error-text);
+  --color-error-border: var(--error-border);
+  --color-error-bg: var(--error-bg);
+
+  --color-success-text: var(--success-text);
+  --color-success-border: var(--success-border);
+  --color-success-bg: var(--success-bg);
+
+  --color-warning-text: var(--warning-text);
+  --color-warning-border: var(--warning-border);
+  --color-warning-bg: var(--warning-bg);
+
+  --color-info-text: var(--info-text);
+  --color-info-border: var(--info-border);
+  --color-info-bg: var(--info-bg);
+}
+
+@layer base {
+  button,
+  [type='button'],
+  [type='submit'],
+  [type='reset'] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [type='button']:disabled,
+  [type='submit']:disabled,
+  [type='reset']:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover transition-colors;
+  }
+}
