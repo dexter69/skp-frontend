@@ -15,6 +15,20 @@
     if (!sekcja.disabled) aktywnaSekcja = sekcja.id;
   }
 
+  // Mock danych — później przyjdą z API
+  let zamowienie = $state({
+    id: 123,
+    numer: null,   // null = szkic, '256/26 MS' = opublikowane
+  });
+
+  const badge = $derived(zamowienie.numer ? null : 'Szkic');
+
+  const tytul = $derived(
+    zamowienie.numer
+      ? `Zamówienie ${zamowienie.numer}`
+      : 'Nowe zamówienie'
+  );
+
   const sidebar = getContext('sidebar');
   sidebar.ustawKontekst(nawigacjaSekcji);
   onDestroy(() => sidebar.wyczyscKontekst());
@@ -45,10 +59,23 @@
   </ul>
 
   <div class="mt-4">
-    <button class="w-full rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover">
+    <button class="w-full rounded-md bg-accent px-3 py-2 text-sm font-semibold text-text-on-dark hover:bg-accent-hover transition-colors">
       Zapisz zamówienie
     </button>
   </div>
 {/snippet}
 
-{@render children()}
+<!-- Header PG -->
+<div class="border-b border-border-default bg-bg-primary px-8 py-4 flex items-center gap-x-3">
+  <h1 class="text-lg font-semibold text-text-heading">{tytul}</h1>
+  {#if zamowienie.badge}
+    <span class="inline-flex items-center rounded-md bg-border-default px-2 py-1 text-xs font-medium text-text-secondary">
+      {badge}
+    </span>
+  {/if}
+</div>
+
+<!-- Treść strony -->
+<div class="flex-1 overflow-y-auto">
+  {@render children()}
+</div>
