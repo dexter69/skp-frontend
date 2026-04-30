@@ -1,0 +1,93 @@
+<script>
+  let { onWybor } = $props();
+
+  let otwarty = $state(false);
+  let fraza = $state('');
+
+  const klienci = [
+    { id: 1, nazwa: 'ABC Transport Sp. z o.o.', miasto: 'Warszawa', nip: '123-456-78-90' },
+    { id: 2, nazwa: 'XYZ Logistyka S.A.', miasto: 'Kraków', nip: '987-654-32-10' },
+    { id: 3, nazwa: 'Jan Kowalski', miasto: 'Gdańsk', nip: '111-222-33-44' },
+    { id: 4, nazwa: 'Firma Testowa Sp. z o.o.', miasto: 'Poznań', nip: '555-666-77-88' },
+  ];
+
+  const widoczniKlienci = $derived(
+    fraza.length < 2
+        ? []
+        : klienci.filter(k =>
+            k.nazwa.toLowerCase().includes(fraza.toLowerCase())
+        )
+  );
+
+  function otworz() { otwarty = true; }
+  function zamknij() { 
+    otwarty = false;
+    fraza = '';
+  }
+
+  function wybierz(klient) {
+    onWybor?.(klient);
+    zamknij();
+  }
+</script>
+
+<button
+  type="button"
+  onclick={otworz}
+  class="w-full rounded-lg border border-border-default bg-white px-4 py-3 text-left text-sm text-text-secondary hover:border-border-strong hover:bg-bg-primary transition-colors"
+>
+  Wybierz klienta...
+</button>
+
+{#if otwarty}
+  <button
+    type="button"
+    onclick={zamknij}
+    class="fixed inset-y-0 left-64 right-0 z-50 bg-gray-500/25 cursor-default"
+  ></button>
+
+  <div class="fixed inset-y-0 left-64 right-0 z-50 overflow-y-auto p-20 pointer-events-none">
+    <div class="mx-auto max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl outline-1 outline-black/5 pointer-events-auto">
+
+      <!-- Input -->
+      <div class="grid grid-cols-1 border-b border-border-default">
+        <input
+          type="text"
+          bind:value={fraza}
+          placeholder="Szukaj klienta..."
+          class="col-start-1 row-start-1 h-12 w-full pr-4 pl-11 text-sm text-text-primary outline-hidden placeholder:text-text-muted"
+        />
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+          class="pointer-events-none col-start-1 row-start-1 ml-4 size-5 self-center text-text-muted">
+          <path d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" fill-rule="evenodd" />
+        </svg>
+      </div>
+
+      <!-- Lista -->
+      {#if fraza.length < 2}
+        <p class="px-4 py-3 text-sm text-text-muted">Zacznij wpisywać...</p>
+      {:else if widoczniKlienci.length === 0}
+        <p class="px-4 py-3 text-sm text-text-muted">Brak wyników.</p>
+      {:else}
+        <ul class="max-h-72 overflow-y-auto py-2">
+          {#each widoczniKlienci as klient}
+            <li>
+                <button
+                type="button"
+                onclick={() => wybierz(klient)}
+                class="w-full px-4 py-2.5 text-left hover:bg-bg-primary transition-colors"
+                >
+                <span class="text-sm text-text-primary font-medium">{klient.nazwa}</span>
+                <span class="text-text-muted"> · </span>
+                <span class="text-sm text-text-secondary">{klient.miasto}</span>
+                <span class="text-text-muted"> · </span>
+                <span class="text-sm text-text-secondary">NIP: {klient.nip}</span>
+                </button>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+
+    </div>
+  </div>
+{/if}
