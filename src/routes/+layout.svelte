@@ -35,7 +35,7 @@
   });
 </script>
 
-<div class="fixed inset-y-0 left-0 w-64 bg-gray-900 flex flex-col h-screen">
+<div class="fixed inset-y-0 left-0 w-64 bg-nav-bg flex flex-col h-screen">
 
   <!-- Strefa górna: kontekstowa -->
   {#if kontekstGorny}
@@ -55,8 +55,8 @@
               onclick={() => toggleItem(item.label)}
               class="w-full flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors
                 {openItem === item.label
-                  ? 'bg-white/5 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'}"
+                  ? 'bg-nav-item-hover text-text-on-dark'
+                  : 'text-text-muted hover:text-text-on-dark hover:bg-nav-item-hover'}"
             >
               <span>{item.label}</span>
               <svg viewBox="0 0 20 20" fill="currentColor"
@@ -70,7 +70,7 @@
                 {#each item.submenu as sub}
                   <li>
                     <a href={sub.href}
-                      class="block rounded-md px-3 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
+                      class="block rounded-md px-3 py-2 text-sm font-medium text-text-muted hover:text-text-on-dark hover:bg-nav-sub-hover transition-colors">
                       {sub.label}
                     </a>
                   </li>
@@ -78,13 +78,13 @@
               </ul>
             {/if}
           {:else}
-            <button
-              type="button"
-              disabled={item.deprecated}
-              class="w-full text-left block rounded-md px-3 py-2 text-sm font-medium transition-colors
-                {item.deprecated ? 'text-gray-500 cursor-default' : 'text-gray-400 hover:text-white hover:bg-white/5'}">
+            <a href="#"
+              class="block rounded-md px-3 py-2 text-sm font-medium transition-colors
+                {item.deprecated
+                  ? 'text-text-muted opacity-50 cursor-not-allowed'
+                  : 'text-text-muted hover:text-text-on-dark hover:bg-nav-item-hover'}">
               {item.label}
-            </button>
+            </a>
           {/if}
         </li>
       {/each}
@@ -92,13 +92,13 @@
   </nav>
 
   <!-- Logo -->
-  <div class="px-4 py-4 border-t border-white/10">
-    <span class="text-white font-bold">SKP</span>
+  <div class="px-4 py-4 border-t border-white/20">
+    <span class="text-text-on-dark font-bold">SKP</span>
   </div>
 
 </div>
 
-<main class="ml-64 h-screen overflow-y-auto bg-gray-100">
+<main class="ml-64 h-screen overflow-y-auto bg-bg-primary">
   <div class="h-full px-8 py-8">
     {@render children()}
   </div>

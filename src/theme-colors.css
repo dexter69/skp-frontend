@@ -80,7 +80,10 @@ html tło (najciemniejsze)
 }
 
 @media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+  /* Zostawić tak, by wrócić do kolorów w zależności o theme OS
   :root {
+  */
     /* PALETA KOLORÓW - CIEMNY MOTYW */
     
     /* Tła */
