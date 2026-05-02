@@ -1,7 +1,6 @@
 <script>
-  let { onWybor } = $props();
+  let { onWybor, otwarty = $bindable(false) } = $props();
 
-  let otwarty = $state(false);
   let fraza = $state('');
 
   const klienci = [
@@ -19,7 +18,6 @@
         )
   );
 
-  function otworz() { otwarty = true; }
   function zamknij() { 
     otwarty = false;
     fraza = '';
@@ -29,17 +27,16 @@
     onWybor?.(klient);
     zamknij();
   }
+
+  function handleKlawisz(e) {
+    if (e.key === 'Escape' && otwarty) zamknij();
+  }
 </script>
 
-<button
-  type="button"
-  onclick={otworz}
-  class="w-full rounded-lg border border-border-default bg-white px-4 py-3 text-left text-sm text-text-secondary hover:border-border-strong hover:bg-bg-primary transition-colors"
->
-  Wybierz klienta...
-</button>
+<svelte:window onkeydown={handleKlawisz} />
 
-{#if otwarty}
+{#if otwarty}  
+  
   <button
     type="button"
     onclick={zamknij}
@@ -53,6 +50,7 @@
       <div class="grid grid-cols-1 border-b border-border-default">
         <input
           type="text"
+          autofocus
           bind:value={fraza}
           placeholder="Szukaj klienta..."
           class="col-start-1 row-start-1 h-12 w-full pr-4 pl-11 text-sm text-text-primary outline-hidden placeholder:text-text-muted"

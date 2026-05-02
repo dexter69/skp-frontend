@@ -1,5 +1,13 @@
 @import "tailwindcss";
-@import "./theme-colors.css";
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+}
+
+@import "./theme-light.css";
+@import "./theme-dark.css";
 
 @theme {
   --font-sans: InterVariable, sans-serif;

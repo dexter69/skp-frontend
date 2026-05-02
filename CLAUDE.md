@@ -166,3 +166,21 @@ Przykładowe klasy:
 ### Nawigacja w aplikacji
 - Nowe widoki SvelteKit żyją pod /app/ obok starego CakePHP
 - Projektujemy tak by nie blokować późniejszej pełnej migracji UI do SvelteKit
+
+## System motywów
+
+Aktualnie aplikacja używa **wymuszonego jasnego motywu** niezależnie od OS.
+
+### Pliki
+- `src/theme-light.css` — zmienne CSS dla jasnego motywu (`:root { }`)
+- `src/theme-dark.css` — zmienne CSS dla ciemnego motywu (`:root.dark { }`)
+- `src/app.css` — importuje oba pliki + wymusza jasny motyw przez `color-scheme: light` w `@layer base`
+
+### Jak przywrócić reakcję na motyw OS
+1. W `app.css` usuń `color-scheme: light` z `@layer base`
+2. W `theme-dark.css` zamień `:root.dark` na `@media (prefers-color-scheme: dark) { :root { } }`
+
+### Jak dodać przełącznik w UI
+1. Zostaw `theme-dark.css` z `:root.dark`
+2. Usuń `color-scheme: light` z `app.css`
+3. Dodaj przycisk który toggleuje klasę `dark` na elemencie `<html>` przez `document.documentElement.classList.toggle('dark')`

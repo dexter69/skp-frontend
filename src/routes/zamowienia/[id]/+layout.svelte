@@ -1,8 +1,13 @@
 <script>
   import { getContext, onDestroy, setContext } from 'svelte';
+  import { tworzStanZamowienia } from '$lib/stany/zamowienie.svelte.js';
 
   let { children } = $props();
 
+  // Stan zamówienia
+  const zamowienie = tworzStanZamowienia({ id: 123 }); // mock — później z API
+
+  // Sekcje
   const sekcje = [
     { id: 'klient', label: 'Klient i produkty' },
     { id: 'przesylki', label: 'Przesyłki' },
@@ -15,27 +20,25 @@
     if (!sekcja.disabled) aktywnaSekcja = sekcja.id;
   }
 
-  // Mock danych — później przyjdą z API
-  let zamowienie = $state({
-    id: 123,
-    numer: null,   // null = szkic, '256/26 MS' = opublikowane
-  });
-
   const badge = $derived(zamowienie.numer ? null : 'Szkic');
-
+  
   const tytul = $derived(
     zamowienie.numer
       ? `Zamówienie ${zamowienie.numer}`
       : 'Nowe zamówienie'
   );
 
+  // Context
   const sidebar = getContext('sidebar');
   sidebar.ustawKontekst(nawigacjaSekcji);
   onDestroy(() => sidebar.wyczyscKontekst());
 
   setContext('zamowienie', {
-    aktywnaSekcja: () => aktywnaSekcja
+    aktywnaSekcja: () => aktywnaSekcja,
+    dane: () => zamowienie,
+    zaktualizuj: (zmiany) => Object.assign(zamowienie, zmiany)
   });
+
 </script>
 
 {#snippet nawigacjaSekcji()}
