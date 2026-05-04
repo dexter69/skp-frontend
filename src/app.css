@@ -10,6 +10,9 @@
 @import "./theme-dark.css";
 
 @theme {
+  /* Szerokość sidebara w głównym layoucie */
+  --sidebar-width: 16rem;
+
   --font-sans: InterVariable, sans-serif;
   --font-sans--font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 

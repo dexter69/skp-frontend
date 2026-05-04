@@ -35,7 +35,7 @@
   });
 </script>
 
-<div class="fixed inset-y-0 left-0 w-64 bg-nav-bg flex flex-col h-screen">
+<div class="fixed inset-y-0 left-0 w-(--sidebar-width) bg-nav-bg flex flex-col h-screen">
 
   <!-- Strefa górna: kontekstowa -->
   {#if kontekstGorny}
@@ -98,7 +98,7 @@
 
 </div>
 
-<main class="ml-64 h-screen overflow-y-auto bg-bg-primary">
+<main class="ml-(--sidebar-width) h-screen overflow-y-auto bg-bg-primary">
   <div class="h-full px-8 py-8">
     {@render children()}
   </div>
