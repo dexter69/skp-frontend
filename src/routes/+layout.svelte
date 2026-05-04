@@ -4,6 +4,9 @@
 
   let { children } = $props();
 
+  // Definicja nawigacji aplikacji.
+  // submenu: [] oznacza brak podmenu — element działa jako zwykły link.
+  // deprecated: true — element wyszarzony, niedostępny (stara funkcjonalność do usunięcia w przyszłości)
   const navItems = [
     {
       label: 'Zamówienia',
@@ -20,14 +23,20 @@
     },
     { label: 'Klienci', submenu: [] },
     { label: 'Produkcja', submenu: [] },
+    // Karty: stara funkcjonalność, zachowana tymczasowo
     { label: 'Karty', submenu: [], deprecated: true },
   ];
 
+  // Śledzenie która pozycja nawigacji jest aktualnie rozwinięta
   let openItem = $state(null);
   function toggleItem(label) {
     openItem = openItem === label ? null : label;
   }
 
+  // Mechanizm dwustrefowego sidebara.
+  // Górna strefa jest kontekstowa — każda podstrona może wstrzyknąć tam
+  // swój snippet (np. sekcje formularza zamówienia) przez getContext('sidebar').
+  // Gdy użytkownik opuści podstronę, snippet jest czyszczony automatycznie.
   let kontekstGorny = $state(null);
   setContext('sidebar', {
     ustawKontekst: (komponent) => { kontekstGorny = komponent; },
@@ -35,21 +44,27 @@
   });
 </script>
 
+<!-- Sidebar: stały, pełna wysokość ekranu.
+     Szerokość kontrolowana przez zmienną CSS --sidebar-width zdefiniowaną w app.css.
+     Zmiana szerokości = zmiana tylko tej jednej zmiennej. -->
 <div class="fixed inset-y-0 left-0 w-(--sidebar-width) bg-nav-bg flex flex-col h-screen">
 
-  <!-- Strefa górna: kontekstowa -->
+  <!-- Strefa górna: kontekstowa.
+       Widoczna tylko gdy podstrona wstrzyknie tu swój snippet.
+       Przykład: sekcje formularza zamówienia. -->
   {#if kontekstGorny}
     <div class="px-3 py-4 border-b border-white/30">
       {@render kontekstGorny()}
     </div>
   {/if}
 
-  <!-- Strefa dolna: nawigacja -->
+  <!-- Strefa dolna: stała nawigacja aplikacji -->
   <nav class="flex-1 px-3 py-4 overflow-y-auto">
     <ul class="space-y-1">
       {#each navItems as item}
         <li>
           {#if item.submenu.length > 0}
+            <!-- Pozycja z podmenu — klikalny przycisk rozwijający listę -->
             <button
               type="button"
               onclick={() => toggleItem(item.label)}
@@ -59,6 +74,7 @@
                   : 'text-text-muted hover:text-text-on-dark hover:bg-nav-item-hover'}"
             >
               <span>{item.label}</span>
+              <!-- Strzałka obraca się o 180° gdy podmenu jest otwarte -->
               <svg viewBox="0 0 20 20" fill="currentColor"
                 class="size-4 transition-transform {openItem === item.label ? 'rotate-180' : ''}">
                 <path fill-rule="evenodd" clip-rule="evenodd"
@@ -78,6 +94,8 @@
               </ul>
             {/if}
           {:else}
+            <!-- Pozycja bez podmenu — zwykły link.
+                 deprecated: wyszarzony i niedostępny dla użytkownika -->
             <a href="#"
               class="block rounded-md px-3 py-2 text-sm font-medium transition-colors
                 {item.deprecated
@@ -91,13 +109,16 @@
     </ul>
   </nav>
 
-  <!-- Logo -->
+  <!-- Logo / nazwa aplikacji -->
   <div class="px-4 py-4 border-t border-white/20">
     <span class="text-text-on-dark font-bold">SKP</span>
   </div>
 
 </div>
 
+<!-- Panel główny (PG): zajmuje resztę ekranu po prawej stronie sidebara.
+     margin-left = szerokość sidebara (--sidebar-width).
+     Tylko PG scrolluje — nie cała strona. -->
 <main class="ml-(--sidebar-width) h-screen overflow-y-auto bg-bg-primary">
   <div class="h-full px-8 py-8">
     {@render children()}
