@@ -10,7 +10,6 @@
   // — dane(): aktualny stan zamówienia
   // — zaktualizuj(): funkcja do częściowej aktualizacji stanu
   const { aktywnaSekcja, dane, zaktualizuj } = getContext("zamowienie");
-  const z = dane();
 </script>
 
 {#if aktywnaSekcja() === "klient"}
@@ -42,14 +41,7 @@
         >
           <MetadaneZamowienia {dane} {zaktualizuj} />
         </div>
-
-        <!-- Płatności: 1/2 szerokości gridu.
-             TODO: komponent Platnosci.svelte -->
-        <!-- <div class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-2">
-          <div class="p-4">
-            <p class="text-sm text-text-muted">Tu będą płatności...</p>
-          </div>
-        </div> -->
+        
         <!-- Płatności: cała szerokość -->
         <div
           class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-4"
@@ -60,9 +52,10 @@
         <!-- Notatki — dane do faktury i uwagi w tabach, pełna szerokość wiersza -->
         <div class="col-span-full">
           <NotatkaZamowienia
-            bind:daneDoFaktury={z.daneDoFaktury}
-            bind:uwagi={z.uwagi}
-          />
+            daneDoFaktury={dane().daneDoFaktury}
+            uwagi={dane().uwagi}
+            onZmiana={(pola) => zaktualizuj(pola)}
+          />          
         </div>
       </div>
     </div>
