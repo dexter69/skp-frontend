@@ -3,12 +3,14 @@
   import KartaKlienta from "$lib/komponenty/zamowienie/KartaKlienta.svelte";
   import MetadaneZamowienia from "$lib/komponenty/zamowienie/MetadaneZamowienia.svelte";
   import Platnosci from "$lib/komponenty/zamowienie/Platnosci.svelte";
+  import NotatkaZamowienia from "$lib/komponenty/zamowienie/NotatkaZamowienia.svelte";
 
   // Pobieramy z contextu zamówienia:
   // — aktywnaSekcja(): która sekcja jest aktualnie wybrana w sidebarze
   // — dane(): aktualny stan zamówienia
   // — zaktualizuj(): funkcja do częściowej aktualizacji stanu
   const { aktywnaSekcja, dane, zaktualizuj } = getContext("zamowienie");
+  const z = dane();
 </script>
 
 {#if aktywnaSekcja() === "klient"}
@@ -55,25 +57,12 @@
           <Platnosci {dane} {zaktualizuj} />
         </div>
 
-        <!-- Dane do faktury: 1/2 szerokości gridu.
-             Oddzielone od uwag ze względu na kontrolę dostępu (dane finansowe).
-             TODO: komponent DaneDoFaktury.svelte -->
-        <div
-          class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-2"
-        >
-          <div class="p-4">
-            <p class="text-sm text-text-muted">Tu będą dane do faktury...</p>
-          </div>
-        </div>
-
-        <!-- Uwagi: 1/2 szerokości gridu.
-             TODO: komponent Uwagi.svelte -->
-        <div
-          class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-2"
-        >
-          <div class="p-4">
-            <p class="text-sm text-text-muted">Tu będą uwagi...</p>
-          </div>
+        <!-- Notatki — dane do faktury i uwagi w tabach, pełna szerokość wiersza -->
+        <div class="col-span-full">
+          <NotatkaZamowienia
+            bind:daneDoFaktury={z.daneDoFaktury}
+            bind:uwagi={z.uwagi}
+          />
         </div>
       </div>
     </div>
