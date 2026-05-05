@@ -2,6 +2,7 @@
   import { getContext } from "svelte";
   import KartaKlienta from "$lib/komponenty/zamowienie/KartaKlienta.svelte";
   import MetadaneZamowienia from "$lib/komponenty/zamowienie/MetadaneZamowienia.svelte";
+  import Platnosci from "$lib/komponenty/zamowienie/Platnosci.svelte";
 
   // Pobieramy z contextu zamówienia:
   // — aktywnaSekcja(): która sekcja jest aktualnie wybrana w sidebarze
@@ -15,15 +16,12 @@
        Układ: lewa kolumna (70%) z formularzem + prawa kolumna (30%) z listą produktów.
        Przy małym oknie (<xl): obie kolumny po 50%. -->
   <div class="flex h-full gap-4 p-6">
-
     <!-- Lewa kolumna: formularz zamówienia -->
     <div class="flex w-1/2 shrink-0 flex-col gap-4 overflow-y-auto xl:w-7/10">
-
       <!-- Grid 4-kolumnowy dla kart formularza.
            Przy małym oknie (<xl): 1 kolumna, karty układają się pionowo.
            Proporcje kart kontrolowane przez col-span. -->
       <div class="grid grid-cols-1 gap-4 xl:grid-cols-4">
-
         <!-- Karta klienta: 3/4 szerokości gridu.
              Klikalny panel — otwiera modal wyboru klienta.
              Pokazuje dane wybranego klienta lub empty state. -->
@@ -37,42 +35,55 @@
         <!-- Metadane zamówienia: 1/4 szerokości gridu.
              Zawiera: data realizacji, ekspresowe (toggle), typ klienta (nowy/stały).
              Typ klienta pojawia się tylko po wyborze klienta. -->
-        <div class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-1">
+        <div
+          class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-1"
+        >
           <MetadaneZamowienia {dane} {zaktualizuj} />
         </div>
 
         <!-- Płatności: 1/2 szerokości gridu.
              TODO: komponent Platnosci.svelte -->
-        <div class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-2">
+        <!-- <div class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-2">
           <div class="p-4">
             <p class="text-sm text-text-muted">Tu będą płatności...</p>
           </div>
+        </div> -->
+        <!-- Płatności: cała szerokość -->
+        <div
+          class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-4"
+        >
+          <Platnosci {dane} {zaktualizuj} />
         </div>
 
         <!-- Dane do faktury: 1/2 szerokości gridu.
              Oddzielone od uwag ze względu na kontrolę dostępu (dane finansowe).
              TODO: komponent DaneDoFaktury.svelte -->
-        <div class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-2">
+        <div
+          class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-2"
+        >
           <div class="p-4">
             <p class="text-sm text-text-muted">Tu będą dane do faktury...</p>
           </div>
         </div>
 
-        <!-- Uwagi: cała szerokość gridu.
+        <!-- Uwagi: 1/2 szerokości gridu.
              TODO: komponent Uwagi.svelte -->
-        <div class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-4">
+        <div
+          class="col-span-1 overflow-hidden rounded-lg bg-white shadow-sm xl:col-span-2"
+        >
           <div class="p-4">
             <p class="text-sm text-text-muted">Tu będą uwagi...</p>
           </div>
         </div>
-
       </div>
     </div>
 
     <!-- Prawa kolumna: lista produktów zamówienia.
          Zajmuje resztę dostępnej wysokości — własny scroll wewnętrzny.
          TODO: komponent ListaProduktow.svelte -->
-    <div class="flex w-1/2 shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-sm xl:w-3/10">
+    <div
+      class="flex w-1/2 shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-sm xl:w-3/10"
+    >
       <div class="border-b border-border-default px-4 py-3">
         <h3 class="text-sm font-semibold text-text-heading">Produkty</h3>
       </div>
@@ -80,9 +91,7 @@
         <p class="text-sm text-text-muted">Tu będzie lista produktów...</p>
       </div>
     </div>
-
   </div>
-
 {:else if aktywnaSekcja() === "przesylki"}
   <!-- Sekcja 2: Przesyłki
        TODO: zbudować widok przesyłek -->

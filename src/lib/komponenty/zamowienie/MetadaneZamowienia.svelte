@@ -10,13 +10,12 @@
   // $effect synchronizuje lokalną zmienną z globalnym stanem zamówienia.
   let ekspresowe = $state(dane().ekspresowe);
 
-  $effect(() => {
-    zaktualizuj({ ekspresowe });
-  });
+  // $effect(() => {
+  //   zaktualizuj({ ekspresowe });
+  // });
 </script>
 
 <div class="flex h-full flex-col gap-3 p-4">
-
   <!-- Data realizacji.
        Używamy value + onchange zamiast bind:value —
        dane pochodzą z zewnętrznego stanu (kontekst zamówienia),
@@ -36,7 +35,11 @@
   <!-- Toggle ekspresowe — uniwersalny komponent z lib/komponenty/Toggle.svelte.
        bind:wartosc synchronizuje stan z lokalną zmienną ekspresowe,
        która przez $effect aktualizuje globalny stan zamówienia. -->
-  <Toggle etykieta="EKSPRES" bind:wartosc={ekspresowe} />
+  <Toggle
+    etykieta="EKSPRES"
+    bind:wartosc={ekspresowe}
+    onZmiana={(v) => zaktualizuj({ ekspresowe: v })}
+  />
 
   <!-- Typ klienta: "nowy" lub "stały".
        Pojawia się tylko po wyborze klienta — logika biznesowa firmy.
@@ -54,8 +57,8 @@
             onclick={() => zaktualizuj({ typKlienta: typ })}
             class="flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors
               {dane().typKlienta === typ
-                ? 'border-accent bg-accent text-white'
-                : 'border-border-default bg-white text-text-secondary hover:border-border-strong'}"
+              ? 'border-accent bg-accent text-white'
+              : 'border-border-default bg-white text-text-secondary hover:border-border-strong'}"
           >
             {typ.charAt(0).toUpperCase() + typ.slice(1)}
           </button>
@@ -63,5 +66,4 @@
       </div>
     </div>
   {/if}
-
 </div>
