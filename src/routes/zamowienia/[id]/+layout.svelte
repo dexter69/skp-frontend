@@ -9,7 +9,7 @@
   const zamowienie = tworzStanZamowienia({ id: 123 });
 
   // Definicja sekcji formularza zamówienia.
-  // disabled: true — sekcja widoczna ale niedostępna (placeholder na przyszłość)
+  // disabled: true — sekcja widoczna w sidebarze ale niedostępna (placeholder na przyszłość)
   const sekcje = [
     { id: "klient", label: "Klient i produkty" },
     { id: "przesylki", label: "Przesyłki" },
@@ -24,7 +24,7 @@
   }
 
   // badge: pokazuje 'Szkic' gdy zamówienie nie ma numeru (nieopublikowane).
-  // Gdy zamówienie ma numer — badge znika (null = nie renderujemy).
+  // Gdy zamówienie otrzyma numer po publikacji — badge znika automatycznie.
   const badge = $derived(zamowienie.numer ? null : "Szkic");
 
   // Tytuł w headerze PG:
@@ -34,20 +34,20 @@
     zamowienie.numer ? `Zamówienie ${zamowienie.numer}` : "Nowe zamówienie",
   );
 
-  // Wstrzykujemy nawigację sekcji do górnej strefy globalnego sidebara.
-  // Snippet nawigacjaSekcji jest zdefiniowany poniżej w HTML.
+  // Wstrzykujemy snippet nawigacjaSekcji do górnej strefy globalnego sidebara.
+  // Snippet jest zdefiniowany poniżej w HTML — Svelte 5 hoistuje snippety więc
+  // kolejność w pliku nie ma znaczenia.
   // onDestroy czyści górną strefę gdy użytkownik opuszcza widok zamówienia.
   const sidebar = getContext("sidebar");
   sidebar.ustawKontekst(nawigacjaSekcji);
   onDestroy(() => sidebar.wyczyscKontekst());
 
-  // Udostępniamy stan zamówienia i aktywną sekcję dla podstron przez context.
-  // dane() — funkcja (nie wartość) żeby zawsze zwracać aktualny stan
-  // zaktualizuj() — częściowa aktualizacja stanu (tylko podane pola)
+  // Udostępniamy stan zamówienia dla podstron (edycja, podgląd itp.) przez Context API.
+  // dane() — funkcja zwracająca aktualny stan (nie snapshot) — zawsze świeże dane
+  // zaktualizuj() — częściowa aktualizacja stanu, obsługuje zagnieżdżone obiekty przez merge
   setContext("zamowienie", {
     aktywnaSekcja: () => aktywnaSekcja,
     dane: () => zamowienie,
-    // zaktualizuj: (zmiany) => Object.assign(zamowienie, zmiany)
     zaktualizuj: (zmiany) => {
       for (const [klucz, wartosc] of Object.entries(zmiany)) {
         if (
@@ -55,10 +55,10 @@
           typeof wartosc === "object" &&
           !Array.isArray(wartosc)
         ) {
-          // Zagnieżdżony obiekt — mergujemy zamiast nadpisywać
+          // Zagnieżdżony obiekt — mergujemy zamiast nadpisywać całość
           zamowienie[klucz] = { ...zamowienie[klucz], ...wartosc };
         } else {
-          // Prosta wartość — nadpisujemy
+          // Prosta wartość lub tablica — nadpisujemy
           zamowienie[klucz] = wartosc;
         }
       }
@@ -66,9 +66,9 @@
   });
 </script>
 
-<!-- Snippet renderowany w górnej strefie globalnego sidebara.
-     Musi być zdefiniowany przed użyciem w sidebar.ustawKontekst() — 
-     w Svelte 5 snippety są hoistowane więc kolejność w pliku nie ma znaczenia. -->
+<!-- Snippet nawigacjaSekcji — renderowany w górnej strefie globalnego sidebara.
+     Zawiera listę sekcji formularza + przycisk zapisu zamówienia.
+     Reaktywny: aktywnaSekcja zmienia podświetlenie przycisków automatycznie. -->
 {#snippet nawigacjaSekcji()}
   <ul class="space-y-1">
     {#each sekcje as sekcja}
@@ -89,8 +89,8 @@
     {/each}
   </ul>
 
-  <!-- Przycisk zapisu — stały na dole górnej strefy sidebara.
-       Dostępny z każdej sekcji formularza. -->
+  <!-- Przycisk zapisu — dostępny z każdej sekcji formularza.
+       TODO: podpiąć pod akcję zapisu do API -->
   <div class="mt-4">
     <button
       class="w-full rounded-md bg-accent px-3 py-2 text-sm font-semibold text-text-on-dark hover:bg-accent-hover transition-colors"
@@ -101,22 +101,19 @@
 {/snippet}
 
 <!-- Header PG: tytuł zamówienia + opcjonalny badge statusu.
-     Badge pojawia się tylko gdy ma wartość (np. 'Szkic').
+     Badge pojawia się tylko gdy zamówienie nie ma numeru (szkic).
      Gdy zamówienie otrzyma numer po publikacji — badge znika automatycznie. -->
-<div
-  class="border-b border-border-default bg-bg-primary px-8 py-4 flex items-center gap-x-3"
->
+<div class="border-b border-border-default bg-bg-primary px-8 py-4 flex items-center gap-x-3">
   <h1 class="text-lg font-semibold text-text-heading">{tytul}</h1>
   {#if badge}
-    <span
-      class="inline-flex items-center rounded-md bg-border-default px-2 py-1 text-xs font-medium text-text-secondary"
-    >
+    <span class="inline-flex items-center rounded-md bg-border-default px-2 py-1 text-xs font-medium text-text-secondary">
       {badge}
     </span>
   {/if}
 </div>
 
-<!-- Treść aktywnej podstrony (edycja, podgląd, historia itp.) -->
-<div class="flex-1 overflow-y-auto">
+<!-- Kontener treści podstrony (edycja, podgląd, historia itp.).
+     overflow-hidden — scroll jest obsługiwany wewnętrznie przez każdą podstronę. -->
+<div class="flex-1 overflow-hidden">
   {@render children()}
 </div>
