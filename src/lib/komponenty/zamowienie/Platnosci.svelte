@@ -23,8 +23,9 @@
   ];
 
   // Lokalna kopia stanu przedpłaty — potrzebna dla Toggle ($bindable).
-  // Aktualizuje stan zamówienia przez onZmiana zamiast $effect
-  // (unikamy pętli nieskończonej która powstaje gdy $effect czyta i pisze ten sam stan).
+  // Inicjalizacja jednorazowa przy załadowaniu — dane() capture'uje wartość początkową.
+  // To zamierzone: maPrzedplate jest potem zarządzane lokalnie przez Toggle.
+  // Ostrzeżenie IDE można zignorować.
   let maPrzedplate = $state(dane().platnosci?.maPrzedplate ?? false);
 
   // Sekcja "płatność po" jest widoczna gdy:
@@ -69,7 +70,7 @@
               e.target.value = wartosc;
               zaktualizuj({ platnosci: { procent: wartosc } });
             }}
-            class="w-16 rounded-md bg-input-bg px-2 py-1.5 text-sm text-input-text outline outline-1 -outline-offset-1 outline-input-border focus:outline-2 focus:-outline-offset-2 focus:outline-border-focus"
+            class="w-16 rounded-md bg-input-bg px-2 py-1.5 text-sm text-input-text outline-1 -outline-offset-1 outline-input-border focus:outline-2 focus:-outline-offset-2 focus:outline-border-focus"
           />
           <span class="text-sm text-text-secondary">%</span>
         </div>
@@ -115,7 +116,7 @@
             e.target.value = wartosc;
             zaktualizuj({ platnosci: { terminDni: wartosc } });
           }}
-          class="w-16 rounded-md bg-input-bg px-2 py-1.5 text-sm text-input-text outline outline-1 -outline-offset-1 outline-input-border focus:outline-2 focus:-outline-offset-2 focus:outline-border-focus"
+          class="w-16 rounded-md bg-input-bg px-2 py-1.5 text-sm text-input-text outline-1 -outline-offset-1 outline-input-border focus:outline-2 focus:-outline-offset-2 focus:outline-border-focus"
         />
         <span class="text-sm text-text-secondary">dni</span>
       </div>
