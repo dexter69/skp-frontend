@@ -27,13 +27,13 @@
 
       <!-- Wiersz 1: karta klienta (3/4 szerokości) + metadane (1/4 szerokości) -->
       <div class="flex gap-4">
-        <div class="flex-[3]">
+        <div class="flex-3">
           <KartaKlienta
             klient={dane().klient}
             onWybor={(k) => zaktualizuj({ klient: k })}
           />
         </div>
-        <div class="flex-[1] overflow-hidden rounded-lg bg-white shadow-sm">
+        <div class="flex-1 overflow-hidden rounded-lg bg-white shadow-sm">
           <MetadaneZamowienia {dane} {zaktualizuj} />
         </div>
       </div>
