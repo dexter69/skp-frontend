@@ -88,15 +88,14 @@
     {/if}
   </div>
 
-  <!-- Separator pionowy — widoczny tylko gdy obie kolumny są aktywne -->
-  {#if maPrzedplate && pokazPlatnoscPo}
-    <div class="w-px bg-border-default self-stretch"></div>
-  {/if}
+  <!-- Separator pionowy — stały element układu dwukolumnowego -->
+  <div class="w-px bg-border-default self-stretch"></div>
 
   <!-- Prawa kolumna: płatność po otrzymaniu.
        Ukryta gdy przedpłata = 100% (pokazPlatnoscPo = false). -->
-  {#if pokazPlatnoscPo}
-    <div class="flex flex-col gap-3 flex-1">
+
+  <div class="flex flex-col gap-3 flex-1">
+    {#if pokazPlatnoscPo}
       <p class="text-xs font-medium text-text-secondary">
         Płatność po otrzymaniu
       </p>
@@ -128,6 +127,6 @@
         wartosc={dane().platnosci?.formaPo ?? null}
         onZmiana={(v) => zaktualizuj({ platnosci: { formaPo: v } })}
       />
-    </div>
-  {/if}
+    {/if}
+  </div>
 </div>
