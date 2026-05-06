@@ -6,8 +6,8 @@
   let { dane, zaktualizuj } = $props();
 
   // Lokalna kopia stanu ekspresowe — potrzebna do bind:wartosc w Toggle.
-  // $state zamiast $derived bo Toggle zapisuje wartość przez bind (dwukierunkowy przepływ).
-  // $effect synchronizuje lokalną zmienną z globalnym stanem zamówienia.
+  // Używamy lokalnej zmiennej zamiast bezpośrednio dane().ekspresowe,
+  // bo Toggle wymaga dwukierunkowego powiązania przez bind:.
   let ekspresowe = $state(dane().ekspresowe);
 </script>
 
@@ -28,9 +28,8 @@
     />
   </div>
 
-  <!-- Toggle ekspresowe — uniwersalny komponent z lib/komponenty/Toggle.svelte.
-       bind:wartosc synchronizuje stan z lokalną zmienną ekspresowe,
-       która przez $effect aktualizuje globalny stan zamówienia. -->
+  <!-- Toggle ekspresowe.
+       onZmiana aktualizuje globalny stan zamówienia przez zaktualizuj(). -->
   <Toggle
     etykieta="EKSPRES"
     bind:wartosc={ekspresowe}
