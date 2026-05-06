@@ -59,27 +59,18 @@
     </div>
 
     <!-- Prawa kolumna: lista produktów zamówienia.
-         Własny scroll wewnętrzny — niezależny od lewej kolumny.
-         TODO: zastąpić placeholder komponentem ListaProduktow.svelte -->
+         Własny scroll wewnętrzny — niezależny od lewej kolumny. -->
     <div
       class="flex w-1/2 shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-sm xl:w-4/10"
     >
       <div class="border-b border-border-default px-4 py-3">
-        <h3 class="text-sm font-semibold text-text-heading">Produkty</h3>
+        <h3 class="text-2xl font-semibold text-text-heading">Produkty</h3>
       </div>
       <ListaProduktow
         produkty={dane().produkty}
         onZmiana={(lista) => zaktualizuj({ produkty: lista })}
       />
     </div>
-    <!-- <div class="flex w-1/2 shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-sm xl:w-4/10">
-      <div class="border-b border-border-default px-4 py-3">
-        <h3 class="text-sm font-semibold text-text-heading">Produkty</h3>
-      </div>
-      <div class="flex-1 overflow-y-auto px-4 py-3">
-        <p class="text-sm text-text-muted">Tu będzie lista produktów...</p>
-      </div>
-    </div> -->
   </div>
 {:else if aktywnaSekcja() === "przesylki"}
   <!-- Sekcja 2: Przesyłki

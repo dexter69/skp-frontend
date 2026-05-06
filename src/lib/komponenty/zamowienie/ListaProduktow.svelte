@@ -1,8 +1,8 @@
 <!--
   ListaProduktow.svelte
   Lista produktów zamówienia z możliwością dodawania i usuwania.
-  Produkty przechowywane w stanie zamówienia jako tablica obiektów.
-  Krok 1: szkielet z tabelą i polem dodawania — edycja inline w kroku 2.
+  Produkty przechowywane w stanie zamówienia jako tablica obiektów { id, nazwa, ilosc, cena }.
+  Edycja inline przez WierszProduktu.svelte.
 -->
 <script>
   import WierszProduktu from "$lib/komponenty/zamowienie/WierszProduktu.svelte";
@@ -11,13 +11,15 @@
   // onZmiana — callback wywoływany przy każdej zmianie listy
   let { produkty = [], onZmiana } = $props();
 
-  // Lokalna kopia listy — pracujemy na kopii, nie bezpośrednio na stanie
+  // Lokalna kopia listy — pracujemy na kopii, nie bezpośrednio na stanie zamówienia
   let lista = $state([...produkty]);
 
   // Wartość pola dodawania nowego produktu
   let nowaNazwa = $state("");
 
-  // Generuje tymczasowe id dla nowo dodanych produktów (ujemne, żeby nie kolidować z id z bazy)
+  // Licznik tymczasowych id dla nowo dodanych produktów.
+  // Ujemne wartości nie kolidują z id z bazy danych (zawsze dodatnie).
+  // Tymczasowe id zastępowane przez API po zapisie zamówienia.
   let licznikTymczasowy = $state(-1);
 
   function dodajProdukt() {
@@ -27,7 +29,7 @@
     lista = [
       ...lista,
       {
-        id: licznikTymczasowy--, // tymczasowe ujemne id — zastąpione przez API po zapisie
+        id: licznikTymczasowy--,
         nazwa,
         ilosc: 1,
         cena: 0,
@@ -38,18 +40,15 @@
     nowaNazwa = "";
   }
 
-  function usunProdukt(id) {
-    lista = lista.filter((p) => p.id !== id);
-    onZmiana(lista);
-  }
-
   function handleKeydown(e) {
     if (e.key === "Enter") dodajProdukt();
   }
 </script>
 
 <div class="flex h-full flex-col">
-  <!-- Pole dodawania nowego produktu -->
+
+  <!-- Pole dodawania nowego produktu.
+       Enter lub przycisk "Dodaj" — po dodaniu pole się czyści i zachowuje focus. -->
   <div class="flex gap-2 border-b border-border-default px-3 py-2">
     <input
       type="text"
@@ -67,19 +66,18 @@
     </button>
   </div>
 
-  <!-- Tabela produktów -->
+  <!-- Tabela produktów.
+       Pusta lista pokazuje komunikat zamiast pustej tabeli. -->
   <div class="flex-1 overflow-y-auto">
     {#if lista.length === 0}
       <p class="px-4 py-3 text-sm text-text-muted italic">Brak produktów...</p>
     {:else}
       <table class="w-full text-sm">
         <thead>
-          <tr
-            class="border-b border-border-default text-xs text-text-secondary"
-          >
+          <tr class="border-b border-border-default text-xs text-text-secondary">
             <th class="px-3 py-2 text-left font-medium">Nazwa</th>
-            <th class="w-16 px-3 py-2 text-right font-medium">Ilość</th>
-            <th class="w-24 px-3 py-2 text-right font-medium">Cena</th>
+            <th class="w-28 px-3 py-2 text-right font-medium">Ilość</th>
+            <th class="w-28 px-3 py-2 text-right font-medium">Cena</th>
             <th class="w-8"></th>
           </tr>
         </thead>
@@ -99,8 +97,9 @@
               }}
             />
           {/each}
-        </tbody>        
+        </tbody>
       </table>
     {/if}
   </div>
+
 </div>

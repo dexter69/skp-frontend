@@ -2,14 +2,17 @@
   WierszProduktu.svelte
   Jeden wiersz tabeli produktów zamówienia.
   Pola nazwa, ilość i cena są zawsze edytowalne (inline edit).
+  Styl spoczynkowy: brak obramowania, przezroczyste tło.
+  Styl aktywny (focus): tło input-bg + subtelne obramowanie.
   Cena przechowywana jako number, wyświetlana i edytowana z przecinkiem (polski format).
+  Ilość i cena zapisywane przy utracie focusu (onblur) — nie w trakcie wpisywania.
   Komunikuje zmiany i usunięcie przez callbacki — nie zna stanu zamówienia.
 -->
 <script>
   import { IconTrash } from "@tabler/icons-svelte-runes";
 
   // produkt — obiekt z polami: id, nazwa, ilosc, cena
-  // onZmiana — callback wywoływany przy zmianie dowolnego pola
+  // onZmiana — callback wywoływany przy zmianie dowolnego pola, przekazuje cały zaktualizowany obiekt
   // onUsun — callback wywoływany przy kliknięciu kosza
   let { produkt, onZmiana, onUsun } = $props();
 
@@ -18,19 +21,13 @@
   // Przy zapisie (onblur) konwertujemy string → number i wywołujemy onZmiana.
   let cenaStr = $state(formatujCene(produkt.cena));
 
-  // Formatuje number do stringa z przecinkiem i 2 miejscami po przecinku.
-  // Jeśli wartość ma więcej miejsc (max 4) — zachowuje je.
+  // Formatuje number do stringa z przecinkiem i min 2 miejscami po przecinku (max 4).
   // Przykład: 2.69 → '2,69' | 2.6912 → '2,6912' | 0 → '0,00'
   function formatujCene(wartosc) {
-    if (wartosc === null || wartosc === undefined || wartosc === "")
-      return "0,00";
+    if (wartosc === null || wartosc === undefined || wartosc === "") return "0,00";
     const liczba = Number(wartosc);
     if (isNaN(liczba)) return "0,00";
-    // Ustal ile miejsc po przecinku — min 2, max 4
-    const miejsca = Math.max(
-      2,
-      Math.min(4, (liczba.toString().split(".")[1] ?? "").length),
-    );
+    const miejsca = Math.max(2, Math.min(4, (liczba.toString().split(".")[1] ?? "").length));
     return liczba.toFixed(miejsca).replace(".", ",");
   }
 
@@ -42,55 +39,62 @@
   }
 
   function handleCenaBlur() {
-    // Normalizujemy wyświetlany string przy utracie focusu
     const liczba = parsujCene(cenaStr);
+    // Normalizujemy wyświetlany string (np. '2,5' → '2,50')
     cenaStr = formatujCene(liczba);
     onZmiana?.({ ...produkt, cena: liczba });
   }
 </script>
 
-<tr class="border-b border-border-default last:border-0 group">
-  <!-- Nazwa — flex-1, edytowalna inline -->
+<tr class="border-b border-border-default last:border-0">
+
+  <!-- Nazwa — zajmuje całą dostępną szerokość, aktualizowana przy każdym znaku (oninput) -->
   <td class="px-3 py-1.5">
     <input
       type="text"
       value={produkt.nazwa}
+      onfocus={(e) => e.target.select()}
       oninput={(e) => onZmiana?.({ ...produkt, nazwa: e.target.value })}
-      class="w-full rounded bg-transparent text-sm text-text-primary
-             outline-none focus:bg-input-bg px-2 focus:outline-1
+      class="w-full rounded bg-transparent px-2 text-sm text-text-primary
+             outline-none focus:bg-input-bg focus:outline-1
              focus:-outline-offset-1 focus:outline-input-border transition-all"
     />
   </td>
 
-  <!-- Ilość — wąskie pole, liczba całkowita -->  
+  <!-- Ilość — liczba całkowita, walidacja i zapis przy utracie focusu.
+       Spacje jako separatory tysięcy są akceptowane i usuwane przy parsowaniu.
+       Nieprawidłowa wartość (np. tekst) jest korygowana do 1. -->
   <td class="w-28 px-3 py-1.5">
     <input
       type="text"
       value={produkt.ilosc}
+      onfocus={(e) => e.target.select()}
       onblur={(e) => {
         const val = parseInt(e.target.value.replace(/\s/g, "")) || 1;
         e.target.value = val;
         onZmiana?.({ ...produkt, ilosc: val });
       }}
-      class="w-full rounded bg-transparent text-right text-sm text-text-primary
-           px-2 outline-none focus:bg-input-bg focus:outline-1
-           focus:-outline-offset-1 focus:outline-input-border transition-all"
-    />
-  </td>
-
-  <!-- Cena — string z przecinkiem, konwersja przy blur -->
-  <td class="w-28 px-3 py-1.5">
-    <input
-      type="text"
-      bind:value={cenaStr}
-      onblur={handleCenaBlur}
-      class="w-full rounded bg-transparent text-right text-sm text-text-primary
-             outline-none focus:bg-input-bg px-2 focus:outline-1
+      class="w-full rounded bg-transparent px-2 text-right text-sm text-text-primary
+             outline-none focus:bg-input-bg focus:outline-1
              focus:-outline-offset-1 focus:outline-input-border transition-all"
     />
   </td>
 
-  <!-- Kosz — widoczny zawsze, podświetla się na czerwono przy hover -->
+  <!-- Cena — string z przecinkiem, konwersja do number przy utracie focusu.
+       Nieprawidłowa wartość korygowana do 0,00. -->
+  <td class="w-28 px-3 py-1.5">
+    <input
+      type="text"
+      bind:value={cenaStr}
+      onfocus={(e) => e.target.select()}
+      onblur={handleCenaBlur}
+      class="w-full rounded bg-transparent px-2 text-right text-sm text-text-primary
+             outline-none focus:bg-input-bg focus:outline-1
+             focus:-outline-offset-1 focus:outline-input-border transition-all"
+    />
+  </td>
+
+  <!-- Kosz — usuwa wiersz z listy, podświetla się na czerwono przy hover -->
   <td class="w-8 px-2 py-1.5">
     <button
       type="button"
@@ -100,4 +104,5 @@
       <IconTrash size={16} stroke={1.5} />
     </button>
   </td>
+
 </tr>
