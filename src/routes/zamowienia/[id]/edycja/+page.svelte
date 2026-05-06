@@ -23,7 +23,7 @@
     <!-- Lewa kolumna: formularz zamówienia.
          min-h-0 — kluczowe dla poprawnego działania overflow-y-auto w flex.
          Bez tego przeglądarka nie pozwoli kolumnie skurczyć się i scroll nie zadziała. -->
-    <div class="flex min-h-0 w-1/2 shrink-0 flex-col gap-4 overflow-y-auto xl:w-7/10">
+    <div class="flex min-h-0 w-1/2 shrink-0 flex-col gap-4 overflow-y-auto xl:w-6/10">
 
       <!-- Wiersz 1: karta klienta (3/4 szerokości) + metadane (1/4 szerokości).
            Zmiana klienta resetuje typKlienta do null — handlowiec musi wybrać ponownie. -->
@@ -61,7 +61,7 @@
     <!-- Prawa kolumna: lista produktów zamówienia.
          Własny scroll wewnętrzny — niezależny od lewej kolumny.
          TODO: zastąpić placeholder komponentem ListaProduktow.svelte -->
-    <div class="flex w-1/2 shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-sm xl:w-3/10">
+    <div class="flex w-1/2 shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-sm xl:w-4/10">
       <div class="border-b border-border-default px-4 py-3">
         <h3 class="text-sm font-semibold text-text-heading">Produkty</h3>
       </div>
