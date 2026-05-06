@@ -14,6 +14,7 @@ komunikująca się z istniejącym backendem CakePHP przez JSON API.
 - TailwindCSS 4.x (przez @tailwindcss/vite, bez tailwind.config.js)
 - Tailwind Plus — gotowe komponenty HTML przenoszone do .svelte
 - Font Inter z rsms.me/inter/inter.css
+- @tabler/icons-svelte-runes — ikony (oficjalny pakiet dla Svelte 5)
 
 **Backend (osobny projekt, nie edytujemy tu):**
 - CakePHP 2.4.x / PHP 5.6 / MySQL 5.7
@@ -54,7 +55,7 @@ sesji PHP (PHPSESSID) jest potem automatycznie przekazywane przez proxy.
 
 ## Konwencje kodu
 
-**Svelte 5 — używamy run (nowa składnia):**
+**Svelte 5 — używamy runes (nowa składnia):**
 let count = $state(0);
 let { children } = $props();
 let double = $derived(count * 2);
@@ -78,6 +79,18 @@ $: doubled = value * 2;
 - Nie używamy $effect do synchronizacji stanu — używamy callbacków (onZmiana)
 - Świadomie ignorujemy ostrzeżenia a11y — aplikacja desktopowa dla pracowników biurowych
 - Zawsze zaznaczaj gdy proponowane rozwiązanie jest hackiem
+- Zmiany wprowadzamy krokami: jeden krok → sprawdzamy → następny
+
+---
+
+## Ikony
+
+Używamy wyłącznie @tabler/icons-svelte-runes. Nie tworzymy własnych komponentów SVG.
+
+import { IconTrash } from '@tabler/icons-svelte-runes';
+<IconTrash size={16} stroke={1.5} />
+
+Domyślne propsy: size={16} stroke={1.5} — dostosowuj do kontekstu.
 
 ---
 
@@ -95,10 +108,13 @@ src/
 │       ├── Toggle.svelte          ← uniwersalny toggle
 │       ├── WyborOpcji.svelte      ← uniwersalny wybór opcji (radio buttons)
 │       └── zamowienie/
-│           ├── KartaKlienta.svelte
-│           ├── WyborKlienta.svelte
-│           ├── MetadaneZamowienia.svelte
-│           └── Platnosci.svelte
+│           ├── KartaKlienta.svelte       ← panel klienta, otwiera modal
+│           ├── WyborKlienta.svelte       ← Command Palette wyboru klienta
+│           ├── MetadaneZamowienia.svelte ← data realizacji, ekspresowe
+│           ├── Platnosci.svelte          ← przedpłata + płatność po
+│           ├── NotatkaZamowienia.svelte  ← taby: dane do faktury / uwagi
+│           ├── ListaProduktow.svelte     ← lista produktów z dodawaniem
+│           └── WierszProduktu.svelte     ← jeden wiersz tabeli produktów
 └── routes/
     ├── +layout.svelte             ← globalny layout z sidebarem
     ├── +page.svelte               ← strona główna (/)
@@ -166,6 +182,7 @@ Aktualnie aplikacja używa wymuszonego jasnego motywu niezależnie od OS.
 - Nie edytujemy plików backendu CakePHP (chyba że wyraźnie zlecone)
 - Nie tworzymy osobnej strony logowania — redirect na CakePHP
 - Nie używamy $effect do synchronizacji stanu
+- Nie tworzymy własnych komponentów SVG dla ikon — używamy @tabler/icons-svelte-runes
 
 ---
 
@@ -199,18 +216,56 @@ Aktualnie aplikacja używa wymuszonego jasnego motywu niezależnie od OS.
   - Strefa dolna: stała nawigacja aplikacji
 - Szerokość sidebara kontrolowana przez `--sidebar-width` w `app.css`
 - Strefa górna wstrzykiwana przez snippet z `[id]/+layout.svelte`
+- Kontener treści podstrony: `flex-1 overflow-hidden` (nie overflow-y-auto —
+  scroll obsługiwany wewnętrznie przez każdą podstronę)
+
+### Layout sekcji 1 — techniczne
+- Zewnętrzny kontener sekcji: `flex h-full min-h-0 gap-4 p-6`
+- Lewa kolumna (formularz): `flex min-h-0 ... flex-col gap-4 overflow-y-auto`
+- `min-h-0` kluczowe dla poprawnego scrollowania w flex — bez tego
+  przeglądarka nie pozwala elementowi skurczyć się poniżej naturalnej wysokości
+- Prawa kolumna (produkty): własny scroll wewnętrzny, niezależny od lewej
 
 ### Stan zamówienia
 - `src/lib/stany/zamowienie.svelte.js` — reaktywny stan zamówienia
 - Udostępniany przez Context API (`setContext('zamowienie', ...)`)
 - Context zawiera: `aktywnaSekcja()`, `dane()`, `zaktualizuj()`
 - `zaktualizuj()` robi głęboki merge dla zagnieżdżonych obiektów
+- Domyślna data realizacji: dziś + 10 dni roboczych (bez weekendów, święta ignorowane)
+- Struktura produktu: `{ id, nazwa, ilosc, cena }` — cena jako number (JS)
+
+### Konwencje UI — edycja inline
+- Pola edytowalne inline: zawsze widoczne inputy, bez trybu podgląd/edycja
+- Styl spoczynkowy: przezroczyste tło, brak obramowania
+- Styl aktywny (focus): tło `input-bg` + subtelne obramowanie
+- `onfocus={(e) => e.target.select()}` — zaznaczenie zawartości przy focusie
+- Zapis przy `onblur` dla pól wymagających walidacji (ilość, cena)
+- Zapis przy `oninput` dla pól tekstowych bez walidacji (nazwa)
+
+### Konwencje UI — liczby i ceny
+- Frontend oddzielony od formatu backendu — konwersja formatów po stronie backendu
+- Cena przechowywana w stanie jako `number` (JS), np. `2.69`
+- Cena wyświetlana i edytowana jako string z przecinkiem, np. `2,69`
+- Konwersja string→number przy `onblur` przez `parsujCene()`
+- Format wyświetlania: min 2, max 4 miejsca po przecinku
+- Ilość: `type="text"` z walidacją `parseInt(...) || 1` przy `onblur`
+- Nieprawidłowe wartości korygowane automatycznie przy utracie focusu
+
+### Konwencje komponentów
+- Komponenty "inteligentne" znają stan zamówienia (przez context lub props)
+- Komponenty "czyste" komunikują zmiany wyłącznie przez callbacki
+- Przykład: `ListaProduktow` (inteligentny) → `WierszProduktu` (czysty)
+- Tymczasowe id dla nowych rekordów: ujemne liczby całkowite
+  (nie kolidują z id z bazy, zastępowane przez API po zapisie)
+- Zmiana klienta resetuje powiązane pola (np. typKlienta → null)
 
 ### Wybór klienta
 - Command Palette (modal) otwierany kliknięciem w kartę klienta
+- Cały obszar karty klikalny (div z role="button" + tabindex="-1")
 - Live search do CakePHP API (na razie mock)
 - Zamykanie przez Escape lub kliknięcie backdropu
 - Możliwość zmiany klienta w dowolnym momencie
+- Zmiana klienta resetuje typKlienta do null
 
 ### Przesyłki
 - Produkty z zamówienia można rozbić na wiele przesyłek
