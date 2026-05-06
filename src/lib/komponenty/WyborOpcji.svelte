@@ -31,7 +31,7 @@
           value={opcja.id}
           checked={wartosc === opcja.id}
           onchange={() => onZmiana?.(opcja.id)}
-          class="absolute inset-0 appearance-none focus:outline-none"
+          class="absolute inset-0 appearance-none focus:outline-none cursor-pointer"
         />
         <span class="text-sm font-medium {wartosc === opcja.id ? 'text-white' : 'text-text-secondary'}">
           {opcja.label}
