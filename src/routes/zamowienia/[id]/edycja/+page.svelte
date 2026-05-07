@@ -5,6 +5,8 @@
   import Platnosci from "$lib/komponenty/zamowienie/Platnosci.svelte";
   import NotatkaZamowienia from "$lib/komponenty/zamowienie/NotatkaZamowienia.svelte";
   import ListaProduktow from "$lib/komponenty/zamowienie/ListaProduktow.svelte";
+  import SekcjaPrzesylki from "$lib/komponenty/zamowienie/SekcjaPrzesylki.svelte";
+  import DevPanel from "$lib/komponenty/DevPanel.svelte";
 
   // Pobieramy z kontekstu zamówienia:
   // — aktywnaSekcja(): która sekcja jest aktualnie wybrana w sidebarze
@@ -75,8 +77,8 @@
 {:else if aktywnaSekcja() === "przesylki"}
   <!-- Sekcja 2: Przesyłki
        TODO: zbudować widok przesyłek -->
-  <div class="p-8">
-    <h2 class="text-lg font-semibold text-text-heading">Przesyłki</h2>
-    <p class="mt-2 text-sm text-text-secondary">Tu będzie sekcja przesyłek.</p>
-  </div>
+  <SekcjaPrzesylki />
 {/if}
+
+<!-- Tylko podczas developmentu — usunąć przed produkcją -->
+<DevPanel {dane} />

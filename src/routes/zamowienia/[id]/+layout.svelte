@@ -6,7 +6,14 @@
 
   // Stan zamówienia tworzony przez dedykowaną funkcję z osobnego pliku.
   // TODO: zamiast mock danych, pobierać z API na podstawie id z URL
-  const zamowienie = tworzStanZamowienia({ id: 123 });
+
+  const zamowienie = tworzStanZamowienia({
+    id: 123,
+    produkty: [
+      { id: -1, nazwa: "Karty wizytowe", ilosc: 500, cena: 2.69 },
+      { id: -2, nazwa: "Ulotki A5", ilosc: 500, cena: 1.2 },
+    ],
+  });
 
   // Definicja sekcji formularza zamówienia.
   // disabled: true — sekcja widoczna w sidebarze ale niedostępna (placeholder na przyszłość)
@@ -103,10 +110,14 @@
 <!-- Header PG: tytuł zamówienia + opcjonalny badge statusu.
      Badge pojawia się tylko gdy zamówienie nie ma numeru (szkic).
      Gdy zamówienie otrzyma numer po publikacji — badge znika automatycznie. -->
-<div class="border-b border-border-default bg-bg-primary px-8 py-4 flex items-center gap-x-3">
+<div
+  class="border-b border-border-default bg-bg-primary px-8 py-4 flex items-center gap-x-3"
+>
   <h1 class="text-lg font-semibold text-text-heading">{tytul}</h1>
   {#if badge}
-    <span class="inline-flex items-center rounded-md bg-border-default px-2 py-1 text-xs font-medium text-text-secondary">
+    <span
+      class="inline-flex items-center rounded-md bg-border-default px-2 py-1 text-xs font-medium text-text-secondary"
+    >
       {badge}
     </span>
   {/if}
