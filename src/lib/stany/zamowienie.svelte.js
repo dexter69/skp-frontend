@@ -21,47 +21,22 @@ function dodajDniRobocze(dataStart, dni) {
 // Tworzy jedną domyślną przesyłkę z wszystkimi produktami w pełnych ilościach.
 // Wywoływana przy pierwszym wejściu do sekcji Przesyłki (gdy przesylki = []).
 // Adres ustawiany osobno po załadowaniu książki adresowej klienta.
+// Pozycja przesyłki zawiera tylko produkt_id i ilosc — nazwa i ilosc_zamowiona
+// są zawsze pobierane na żywo z zamowienie.produkty (single source of truth).
 function tworzDomyslnaPrzesylke(produkty) {
   return {
     // Ujemne id = nowa przesyłka (nie zapisana w bazie).
     // Ten sam schemat co dla produktów — zastępowane przez API po zapisie.
     id: -1,
-    adres: null,      // null do czasu załadowania książki adresowej klienta
+    adres: null,  // null do czasu załadowania książki adresowej klienta
     uwagi: '',
-    // Pozycje: każdy produkt z zamówienia w pełnej ilości.
-    // produkt_id odpowiada id produktu z listy zamowienie.produkty.
     pozycje: produkty.map(function(p) {
       return {
         produkt_id: p.id,
-        nazwa: p.nazwa,           // denormalizacja — gotowe do wyświetlenia w tabeli
-        ilosc_zamowiona: p.ilosc, // ile zamówiono — potrzebne do obliczenia "dostępnych"
-        ilosc: p.ilosc            // domyślnie: cała ilość trafia do tej przesyłki
+        ilosc: p.ilosc  // domyślnie: cała ilość trafia do tej przesyłki
       };
     })
   };
-}
-
-// Usuwa z przesyłek pozycje powiązane z usuniętym produktem (logika A1).
-// Wywoływana przez zaktualizuj() gdy zmienia się lista produktów.
-// Nie modyfikuje przesyłek jeśli produkt nie był w żadnej z nich.
-function synchronizujPrzesylkiZProduktami(przesylki, produkty) {
-  // Zbiór id aktualnych produktów — do szybkiego sprawdzania
-  const aktualneId = new Set(produkty.map(function(p) { return p.id; }));
-
-  return przesylki.map(function(przesylka) {
-    // Filtrujemy pozycje — zostawiamy tylko te których produkt nadal istnieje
-    const nowePozycje = przesylka.pozycje.filter(function(poz) {
-      return aktualneId.has(poz.produkt_id);
-    });
-
-    // Aktualizujemy ilosc_zamowiona dla produktów których ilość mogła się zmienić
-    const zaktualizowanePozycje = nowePozycje.map(function(poz) {
-      const produkt = produkty.find(function(p) { return p.id === poz.produkt_id; });
-      return Object.assign({}, poz, { ilosc_zamowiona: produkt.ilosc });
-    });
-
-    return Object.assign({}, przesylka, { pozycje: zaktualizowanePozycje });
-  });
 }
 
 export function tworzStanZamowienia(dane = {}) {
@@ -82,8 +57,8 @@ export function tworzStanZamowienia(dane = {}) {
     daneDoFaktury: dane.daneDoFaktury ?? '',
     uwagi: dane.uwagi ?? '',
     produkty: dane.produkty ?? [],          // lista produktów w zamówieniu
-    // Lista przesyłek. Pusta przy starcie — SekcjaPrzesylki tworzy domyślną
-    // przy pierwszym wejściu do sekcji (gdy klient i produkty są już znane).
+    // Lista przesyłek. Pusta przy starcie — inicjalizowana przy pierwszym wejściu
+    // do sekcji Przesyłki (w wybierzSekcje w [id]/+layout.svelte).
     przesylki: dane.przesylki ?? [],
   });
 
@@ -92,5 +67,5 @@ export function tworzStanZamowienia(dane = {}) {
   return zamowienie;
 }
 
-// Eksportujemy pomocnicze funkcje — używane przez SekcjaPrzesylki
-export { tworzDomyslnaPrzesylke, synchronizujPrzesylkiZProduktami };
+// Eksportujemy tworzDomyslnaPrzesylke — używana przez [id]/+layout.svelte
+export { tworzDomyslnaPrzesylke };
