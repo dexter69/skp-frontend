@@ -20,7 +20,6 @@ function dodajDniRobocze(dataStart, dni) {
 
 // Tworzy jedną domyślną przesyłkę z wszystkimi produktami w pełnych ilościach.
 // Wywoływana przy pierwszym wejściu do sekcji Przesyłki (gdy przesylki = []).
-// Adres ustawiany osobno po załadowaniu książki adresowej klienta.
 // Pozycja przesyłki zawiera tylko produkt_id i ilosc — nazwa i ilosc_zamowiona
 // są zawsze pobierane na żywo z zamowienie.produkty (single source of truth).
 function tworzDomyslnaPrzesylke(produkty) {
@@ -28,8 +27,20 @@ function tworzDomyslnaPrzesylke(produkty) {
     // Ujemne id = nowa przesyłka (nie zapisana w bazie).
     // Ten sam schemat co dla produktów — zastępowane przez API po zapisie.
     id: -1,
-    adres: null,  // null do czasu załadowania książki adresowej klienta
+    // Nazwa własna przesyłki — null = brak nazwy, wyświetlamy "Przesyłka N".
+    // UI dla nazwy własnej: TODO na przyszłość.
+    nazwa: null,
+    // Typ dostawy — domyślnie 'kurier' (najczęstszy przypadek).
+    // Możliwe wartości: 'kurier' | 'magazyn' | 'odbior_osobisty' | 'kurier_klienta'
+    typDostawy: 'kurier',
+    // Adres dostawy — domyślny adres klienta ładowany przez SekcjaPrzesylki.
+    // null do czasu załadowania książki adresowej klienta z API.
+    adres: null,
+    // Kurier — null gdy typ != 'kurier' lub nie wybrano jeszcze firmy.
+    // Wartość z listy kurierów z API (np. 'ups', 'dhl').
+    kurier: null,
     uwagi: '',
+    // Pakowanie: TODO
     pozycje: produkty.map(function(p) {
       return {
         produkt_id: p.id,

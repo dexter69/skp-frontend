@@ -13,6 +13,10 @@
   /* Szerokość sidebara w głównym layoucie */
   --sidebar-width: 16rem;
 
+  /* Stała wysokość panelu szczegółów przesyłki.
+   Zmień tę wartość jeśli panel jest za mały lub za duży. */
+  --szczegoly-przesylki-h: 280px;
+
   --font-sans: InterVariable, sans-serif;
   --font-sans--font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 

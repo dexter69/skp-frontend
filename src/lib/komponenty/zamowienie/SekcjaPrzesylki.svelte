@@ -1,6 +1,7 @@
 <script>
   import { getContext, tick } from "svelte";
   import TabelaPrzesylek from "./TabelaPrzesylek.svelte";
+  import SzczegolyPrzesylki from "./SzczegolyPrzesylki.svelte";
 
   // Pobieramy stan zamówienia z contextu.
   const { dane, zaktualizuj } = getContext("zamowienie");
@@ -16,11 +17,11 @@
   // Wynik: mapa { produkt_id → dostępna_ilość }.
   function obliczDostepne() {
     const dostepne = {};
-    dane().produkty.forEach(function(p) {
+    dane().produkty.forEach(function (p) {
       dostepne[p.id] = p.ilosc;
     });
-    dane().przesylki.forEach(function(przesylka) {
-      przesylka.pozycje.forEach(function(poz) {
+    dane().przesylki.forEach(function (przesylka) {
+      przesylka.pozycje.forEach(function (poz) {
         if (dostepne[poz.produkt_id] !== undefined) {
           dostepne[poz.produkt_id] -= poz.ilosc;
         }
@@ -32,31 +33,39 @@
   // Czy można dodać nową przesyłkę?
   function moznaUtworzycPrzesylke() {
     const dostepne = obliczDostepne();
-    return Object.values(dostepne).some(function(ilosc) { return ilosc > 0; });
+    return Object.values(dostepne).some(function (ilosc) {
+      return ilosc > 0;
+    });
   }
 
   // Dodaje nową przesyłkę z dostępnymi ilościami produktów.
+  // Nowa przesyłka ma wszystkie pola ze struktury ustalonej w zamowienie.svelte.js.
   function dodajPrzesylke() {
     if (!moznaUtworzycPrzesylke()) return;
 
     const dostepne = obliczDostepne();
-    const minId = dane().przesylki.reduce(function(min, p) {
+    const minId = dane().przesylki.reduce(function (min, p) {
       return p.id < min ? p.id : min;
     }, 0);
     const noweId = minId - 1;
 
     const nowaPrzesylka = {
       id: noweId,
+      nazwa: null, // nazwa własna — TODO UI na przyszłość
+      typDostawy: "kurier", // domyślny typ
       adres: null,
-      uwagi: '',
-      pozycje: dane().produkty
-        .filter(function(p) { return dostepne[p.id] > 0; })
-        .map(function(p) {
+      kurier: null,
+      uwagi: "",
+      pozycje: dane()
+        .produkty.filter(function (p) {
+          return dostepne[p.id] > 0;
+        })
+        .map(function (p) {
           return {
             produkt_id: p.id,
-            ilosc: dostepne[p.id]
+            ilosc: dostepne[p.id],
           };
-        })
+        }),
     };
 
     zaktualizuj({ przesylki: [...dane().przesylki, nowaPrzesylka] });
@@ -64,9 +73,12 @@
   }
 
   // Usuwa przesyłkę o podanym id. Zawsze zostaje przynajmniej jedna.
+  // TODO: dodać potwierdzenie usunięcia
   function usunPrzesylke(id) {
     if (dane().przesylki.length <= 1) return;
-    const nowe = dane().przesylki.filter(function(p) { return p.id !== id; });
+    const nowe = dane().przesylki.filter(function (p) {
+      return p.id !== id;
+    });
     zaktualizuj({ przesylki: nowe });
     if (aktywnaId === id) {
       aktywnaId = nowe[0].id;
@@ -78,13 +90,13 @@
     aktywnaId = id;
     await tick();
     if (refSzczegoly) {
-      refSzczegoly.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      refSzczegoly.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }
 
-  // Aktualizuje dane konkretnej przesyłki (adres, uwagi, pozycje).
+  // Aktualizuje dane konkretnej przesyłki (adres, uwagi, pozycje, typDostawy itp.).
   function zaktualizujPrzesylke(id, zmiany) {
-    const nowe = dane().przesylki.map(function(p) {
+    const nowe = dane().przesylki.map(function (p) {
       if (p.id !== id) return p;
       return Object.assign({}, p, zmiany);
     });
@@ -92,9 +104,8 @@
   }
 
   // Aktualizuje ilość produktu w zamówieniu (kolumna "Zamów." w tabeli).
-  // Zmiana trafia do zamowienie.produkty — single source of truth.
   function zmienIloscProduktu(produktId, ilosc) {
-    const nowe = dane().produkty.map(function(p) {
+    const nowe = dane().produkty.map(function (p) {
       if (p.id !== produktId) return p;
       return Object.assign({}, p, { ilosc: ilosc });
     });
@@ -102,9 +113,8 @@
   }
 
   // Aktualizuje nazwę produktu w zamówieniu (kolumna "Produkt" w tabeli).
-  // Zmiana trafia do zamowienie.produkty — single source of truth.
   function zmienNazweProduktu(produktId, nazwa) {
-    const nowe = dane().produkty.map(function(p) {
+    const nowe = dane().produkty.map(function (p) {
       if (p.id !== produktId) return p;
       return Object.assign({}, p, { nazwa: nazwa });
     });
@@ -112,46 +122,59 @@
   }
 </script>
 
-<!-- Zewnętrzny kontener sekcji — wypełnia całą dostępną przestrzeń PG. -->
+<!-- Zewnętrzny kontener sekcji — wypełnia całą dostępną przestrzeń PG.
+     flex-col: tabela na górze, szczegóły poniżej.
+     h-full min-h-0: kluczowe dla poprawnego flex scroll w rodzicu. -->
 <div class="flex h-full min-h-0 flex-col">
-
   <div class="flex min-h-0 flex-1 flex-col gap-6 p-6">
-
-    <TabelaPrzesylek
-      produkty={dane().produkty}
-      przesylki={dane().przesylki}
-      {aktywnaId}
-      moznaUtworzycPrzesylke={moznaUtworzycPrzesylke()}
-      onAktywuj={aktywujPrzesylke}
-      onDodaj={dodajPrzesylke}
-      onZmianaIlosci={(przesylkaId, produktId, ilosc) => {
-        const nowe = dane().przesylki.map(function(p) {
-          if (p.id !== przesylkaId) return p;
-          const nowePozycje = p.pozycje.map(function(poz) {
-            if (poz.produkt_id !== produktId) return poz;
-            return Object.assign({}, poz, { ilosc: ilosc });
+    <!-- Tabela krzyżowa.
+         max-h-[40vh]: tabela zajmuje maksymalnie 40% wysokości okna —
+         przy dużej liczbie produktów scrolluje wewnętrznie zamiast wypychać szczegóły. -->
+    <div class="max-h-[40vh]">
+      <TabelaPrzesylek
+        produkty={dane().produkty}
+        przesylki={dane().przesylki}
+        {aktywnaId}
+        moznaUtworzycPrzesylke={moznaUtworzycPrzesylke()}
+        onAktywuj={aktywujPrzesylke}
+        onDodaj={dodajPrzesylke}
+        onZmianaIlosci={(przesylkaId, produktId, ilosc) => {
+          const nowe = dane().przesylki.map(function (p) {
+            if (p.id !== przesylkaId) return p;
+            const nowePozycje = p.pozycje.map(function (poz) {
+              if (poz.produkt_id !== produktId) return poz;
+              return Object.assign({}, poz, { ilosc: ilosc });
+            });
+            return Object.assign({}, p, { pozycje: nowePozycje });
           });
-          return Object.assign({}, p, { pozycje: nowePozycje });
-        });
-        zaktualizuj({ przesylki: nowe });
-      }}
-      onZmianaIlosciProduktu={zmienIloscProduktu}
-      onZmianaUazwyProduktu={zmienNazweProduktu}
-    />
+          zaktualizuj({ przesylki: nowe });
+        }}
+        onZmianaIlosciProduktu={zmienIloscProduktu}
+        onZmianaUazwyProduktu={zmienNazweProduktu}
+      />
+    </div>
 
     <!-- Panel szczegółów aktywnej przesyłki.
-         flex-none: nie kurczy się na rzecz tabeli.
-         max-h-[300px] overflow-y-auto: zabezpieczenie na ekrany 768p. -->
+         flex-1 min-h-0: zajmuje całą pozostałą przestrzeń po tabeli.
+         overflow-hidden: scroll obsługiwany wewnętrznie przez SzczegolyPrzesylki
+         (kolumna "Co jedzie" scrolluje, reszta panelu nie). -->
     {#if aktywnaId !== null}
       <div
         bind:this={refSzczegoly}
-        class="flex-none overflow-y-auto rounded-lg bg-white shadow-sm max-h-[300px]"
+        class="flex-1 min-h-0 overflow-hidden rounded-lg bg-white shadow-sm outline-1 outline-black/5"
       >
-        <div class="p-4 text-sm text-text-secondary">
-          [Szczegóły przesyłki {aktywnaId} — TODO]
-        </div>
+        {#each dane().przesylki as przesylka, i}
+          {#if przesylka.id === aktywnaId}
+            <SzczegolyPrzesylki
+              {przesylka}
+              produkty={dane().produkty}
+              numerPrzesylki={i + 1}
+              onZmiana={(zmiany) => zaktualizujPrzesylke(przesylka.id, zmiany)}
+              onUsun={() => usunPrzesylke(przesylka.id)}
+            />
+          {/if}
+        {/each}
       </div>
     {/if}
-
   </div>
 </div>

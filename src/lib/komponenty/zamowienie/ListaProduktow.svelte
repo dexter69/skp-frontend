@@ -20,7 +20,16 @@
   // Licznik tymczasowych id dla nowo dodanych produktów.
   // Ujemne wartości nie kolidują z id z bazy danych (zawsze dodatnie).
   // Tymczasowe id zastępowane przez API po zapisie zamówienia.
-  let licznikTymczasowy = $state(-1);
+  // Startujemy poniżej najniższego istniejącego id — unikamy kolizji z mockiem
+  let licznikTymczasowy = $state(
+    produkty.length > 0
+      ? Math.min(
+          ...produkty.map(function (p) {
+            return p.id;
+          }),
+        ) - 1
+      : -1,
+  );
 
   function dodajProdukt() {
     const nazwa = nowaNazwa.trim();
@@ -46,7 +55,6 @@
 </script>
 
 <div class="flex h-full flex-col">
-
   <!-- Pole dodawania nowego produktu.
        Enter lub przycisk "Dodaj" — po dodaniu pole się czyści i zachowuje focus. -->
   <div class="flex gap-2 border-b border-border-default px-3 py-2">
@@ -74,7 +82,9 @@
     {:else}
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b border-border-default text-xs text-text-secondary">
+          <tr
+            class="border-b border-border-default text-xs text-text-secondary"
+          >
             <th class="px-3 py-2 text-left font-medium">Nazwa</th>
             <th class="w-28 px-3 py-2 text-right font-medium">Ilość</th>
             <th class="w-28 px-3 py-2 text-right font-medium">Cena</th>
@@ -101,5 +111,4 @@
       </table>
     {/if}
   </div>
-
 </div>
