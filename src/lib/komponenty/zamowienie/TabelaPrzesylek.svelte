@@ -23,13 +23,9 @@
     onZmianaUazwyProduktu,   // callback(produkt_id, nazwa) — zmiana nazwy produktu
   } = $props();
 
-  // Próg zmiany nagłówków: powyżej tej liczby przesyłek skracamy do P1, P2...
   const PROG_SKRACANIA = 4;
-
-  // Czy nagłówki mają być skrócone?
   const skrocone = $derived(przesylki.length > PROG_SKRACANIA);
 
-  // Zwraca ilość produktu w danej przesyłce (lub 0 jeśli produktu nie ma w przesyłce).
   function pobierzIlosc(przesylka, produktId) {
     const pozycja = przesylka.pozycje.find(function(poz) {
       return poz.produkt_id === produktId;
@@ -37,8 +33,6 @@
     return pozycja ? pozycja.ilosc : 0;
   }
 
-  // Oblicza ile danego produktu jest jeszcze dostępne (nie przypisane do żadnej przesyłki).
-  // Wynik może być ujemny — oznacza przekroczenie zamówionej ilości.
   function obliczDostepne(produkt) {
     const przypisane = przesylki.reduce(function(suma, przesylka) {
       return suma + pobierzIlosc(przesylka, produkt.id);
@@ -46,260 +40,223 @@
     return produkt.ilosc - przypisane;
   }
 
-  // Oblicza sumę ilości w danej przesyłce (wszystkich produktów łącznie).
   function sumaPrzesylki(przesylka) {
     return przesylka.pozycje.reduce(function(suma, poz) {
       return suma + poz.ilosc;
     }, 0);
   }
 
-  // Parsuje wartość na liczbę >= 1 (dla zamówionej ilości produktu).
   function parsujIlosc(wartosc) {
     const n = parseInt(wartosc, 10);
     return isNaN(n) || n < 1 ? 1 : n;
   }
 
-  // Parsuje wartość na liczbę >= 0 (dla ilości w przesyłce — może być 0).
   function parsujIloscPrzesylki(wartosc) {
     const n = parseInt(wartosc, 10);
     return isNaN(n) || n < 0 ? 0 : n;
   }
 
-  // Parsuje wartość bez walidacji minimum — używane przy oninput dla podglądu na żywo.
-  // Puste pole lub nie-liczba zwraca 0 (nie korygujemy do 1 podczas wpisywania).
   function parsujPodglad(wartosc) {
     const n = parseInt(wartosc, 10);
     return isNaN(n) || n < 0 ? 0 : n;
   }
 
-  // --- Handlery dla ilości w przesyłce ---
-
-  // oninput: aktualizuje stan na żywo — "Dostępne" reaguje natychmiast.
   function naZmianeIlosciPodglad(przesylkaId, produktId, event) {
     onZmianaIlosci(przesylkaId, produktId, parsujPodglad(event.target.value));
   }
 
-  // onblur: waliduje i koryguje wartość w polu (min. 0).
   function naZmianeIlosci(przesylkaId, produktId, event) {
     const ilosc = parsujIloscPrzesylki(event.target.value);
     event.target.value = ilosc;
     onZmianaIlosci(przesylkaId, produktId, ilosc);
   }
 
-  // --- Handlery dla zamówionej ilości produktu ---
-
-  // oninput: aktualizuje stan na żywo — "Dostępne" reaguje natychmiast.
   function naZmianeIlosciProduktuPodglad(produktId, event) {
     onZmianaIlosciProduktu(produktId, parsujPodglad(event.target.value));
   }
 
-  // onblur: waliduje i koryguje wartość w polu (min. 1).
   function naZmianeIlosciProduktu(produktId, event) {
     const ilosc = parsujIlosc(event.target.value);
     event.target.value = ilosc;
     onZmianaIlosciProduktu(produktId, ilosc);
   }
 
-  // --- Handler dla nazwy produktu ---
-
-  // oninput: zapis przy każdym znaku, bez walidacji.
   function naZmianeNazwyProduktu(produktId, event) {
     onZmianaUazwyProduktu(produktId, event.target.value);
   }
 </script>
 
-<!-- Wrapper sekcji — nagłówek + tabela w układzie z TP -->
-<div class="h-full flex flex-col">
-
-  <!-- Nagłówek — tytuł po lewej, przycisk po prawej (wzorzec TP) -->
-  <div class="sm:flex sm:items-center mb-4 shrink-0">
-    <div class="sm:flex-auto">
-      <h2 class="text-base font-semibold text-text-heading">Przesyłki</h2>
-      <p class="mt-1 text-sm text-text-secondary">
-        Rozdysponuj produkty zamówienia między przesyłki.
-      </p>
-    </div>
-    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-      <button
-        type="button"
-        onclick={onDodaj}
-        disabled={!moznaUtworzycPrzesylke}
-        class="block rounded-md bg-accent px-3 py-2 text-center text-sm font-semibold
-               text-text-on-dark shadow-xs
-               hover:enabled:bg-accent-hover
-               disabled:cursor-not-allowed disabled:opacity-40
-               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      >
-        + Dodaj przesyłkę
-      </button>
-    </div>
+<!-- Nagłówek — tytuł po lewej, przycisk po prawej (wzorzec TP) -->
+<div class="sm:flex sm:items-center mb-4">
+  <div class="sm:flex-auto">
+    <h2 class="text-base font-semibold text-text-heading">Przesyłki</h2>
+    <p class="mt-1 text-sm text-text-secondary">
+      Rozdysponuj produkty zamówienia między przesyłki.
+    </p>
   </div>
-
-  <!-- Karta tabeli — wzorzec TP: overflow-hidden na wrapperze (rounded + shadow),
-       overflow-auto na wewnętrznym divie (scroll X i Y).
-       Rozdzielenie kluczowe dla sticky kolumn — overflow-hidden uciąłby sticky. -->
-  <div class="min-h-0 flex-1 flow-root">
-    <div class="h-full -mx-4 -my-2 overflow-auto sm:-mx-6 lg:-mx-8">
-      <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8 h-full">
-        <div class="h-full overflow-hidden shadow-sm outline-1 outline-black/5 sm:rounded-lg">
-
-          <table class="relative min-w-full divide-y divide-gray-300">
-
-            <!-- colgroup definiuje szerokości kolumn raz dla całej tabeli.
-                 Kolumna "Produkt" bez szerokości — rozciąga się na dostępną przestrzeń.
-                 Wszystkie kolumny numeryczne: w-32 (obsługuje do 8 cyfr + separator). -->
-            <colgroup>
-              <col />
-              <col class="w-32" />
-              {#each przesylki as _}
-                <col class="w-32" />
-              {/each}
-              <col class="w-32" />
-            </colgroup>
-
-            <thead class="bg-gray-50">
-              <tr>
-
-                <th
-                  scope="col"
-                  class="sticky left-0 z-20 bg-gray-50 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-text-heading sm:pl-6"
-                >
-                  Produkt
-                </th>
-
-                <th
-                  scope="col"
-                  class="bg-gray-50 px-3 py-3.5 text-right text-sm font-semibold text-text-secondary"
-                >
-                  Zamów.
-                </th>
-
-                {#each przesylki as przesylka, i}
-                  <th
-                    scope="col"
-                    onclick={() => onAktywuj(przesylka.id)}
-                    class="cursor-pointer px-3 py-3.5 text-center text-sm font-semibold
-                           transition-colors select-none
-                           {aktywnaId === przesylka.id
-                             ? 'bg-accent/10 text-accent'
-                             : 'text-text-heading hover:bg-gray-100'}"
-                  >
-                    {skrocone ? `P${i + 1}` : `Przesyłka ${i + 1}`}
-                  </th>
-                {/each}
-
-                <th
-                  scope="col"
-                  class="sticky right-0 z-20 bg-gray-50 py-3.5 pl-3 pr-4 text-right text-sm font-semibold text-text-secondary sm:pr-6"
-                >
-                  Dostępne
-                </th>
-
-              </tr>
-            </thead>
-
-            <tbody class="divide-y divide-gray-200 bg-white">
-              {#each produkty as produkt}
-                {@const dostepne = obliczDostepne(produkt)}
-                <tr class="hover:bg-gray-50/60">
-
-                  <!-- Nazwa produktu — sticky left, edytowalna inline.
-                       oninput: zapis przy każdym znaku (bez walidacji). -->
-                  <td class="sticky left-0 z-10 bg-white py-2 pl-4 pr-3 text-sm font-medium whitespace-nowrap text-text-primary sm:pl-6">
-                    <input
-                      type="text"
-                      value={produkt.nazwa}
-                      onfocus={(e) => e.target.select()}
-                      oninput={(e) => naZmianeNazwyProduktu(produkt.id, e)}
-                      class="w-full rounded border border-transparent bg-transparent px-2 py-1.5
-                             text-sm font-medium text-text-primary
-                             focus:border-border-focus focus:bg-input-bg focus:outline-none"
-                    />
-                  </td>
-
-                  <!-- Zamówiona ilość — edytowalna inline.
-                       oninput: podgląd na żywo w "Dostępne" (bez walidacji minimum).
-                       onblur: walidacja i korekta do min. 1. -->
-                  <td class="bg-white px-2 py-2 text-right text-sm whitespace-nowrap">
-                    <input
-                      type="text"
-                      value={produkt.ilosc}
-                      onfocus={(e) => e.target.select()}
-                      oninput={(e) => naZmianeIlosciProduktuPodglad(produkt.id, e)}
-                      onblur={(e) => naZmianeIlosciProduktu(produkt.id, e)}
-                      class="w-full rounded border border-transparent bg-transparent px-2 py-1.5
-                             text-right text-sm text-text-secondary
-                             focus:border-border-focus focus:bg-input-bg focus:outline-none"
-                    />
-                  </td>
-
-                  <!-- Ilości w każdej przesyłce — edytowalne inputy inline.
-                       oninput: podgląd na żywo w "Dostępne" (bez walidacji minimum).
-                       onblur: walidacja i korekta do min. 0. -->
-                  {#each przesylki as przesylka}
-                    <td
-                      class="px-2 py-2 text-center whitespace-nowrap
-                             {aktywnaId === przesylka.id ? 'bg-accent/5' : ''}"
-                    >
-                      <input
-                        type="text"
-                        value={pobierzIlosc(przesylka, produkt.id)}
-                        onfocus={(e) => e.target.select()}
-                        oninput={(e) => naZmianeIlosciPodglad(przesylka.id, produkt.id, e)}
-                        onblur={(e) => naZmianeIlosci(przesylka.id, produkt.id, e)}
-                        class="w-full rounded border border-transparent bg-transparent px-2 py-1.5
-                               text-center text-sm text-text-primary
-                               focus:border-border-focus focus:bg-input-bg focus:outline-none"
-                      />
-                    </td>
-                  {/each}
-
-                  <!-- Dostępne — sticky right.
-                       Trzy stany: błąd (ujemne), OK (zero), ostrzeżenie (nieprzypisane) -->
-                  <td
-                    class="sticky right-0 z-10 py-4 pl-3 pr-4 text-right text-sm font-medium whitespace-nowrap sm:pr-6
-                           {dostepne < 0
-                             ? 'bg-error-bg text-error-text'
-                             : dostepne === 0
-                               ? 'bg-white text-success-text'
-                               : 'bg-warning-bg text-warning-text'}"
-                  >
-                    {dostepne}
-                    {#if dostepne < 0}⚠{:else if dostepne === 0}✓{/if}
-                  </td>
-
-                </tr>
-              {/each}
-            </tbody>
-
-            <tfoot>
-              <tr class="border-t-2 border-border-strong">
-
-                <td class="sticky left-0 z-10 bg-gray-50 py-3.5 pl-4 pr-3 text-sm font-semibold text-text-secondary sm:pl-6">
-                  Razem
-                </td>
-
-                <td class="bg-gray-50 px-3 py-3.5"></td>
-
-                {#each przesylki as przesylka}
-                  <td
-                    class="px-3 py-3.5 text-center text-sm font-semibold text-text-primary
-                           {aktywnaId === przesylka.id ? 'bg-accent/5' : 'bg-gray-50'}"
-                  >
-                    {sumaPrzesylki(przesylka)}
-                  </td>
-                {/each}
-
-                <td class="sticky right-0 z-10 bg-gray-50 py-3.5 pl-3 pr-4 sm:pr-6"></td>
-
-              </tr>
-            </tfoot>
-
-          </table>
-
-        </div>
-      </div>
-    </div>
+  <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+    <button
+      type="button"
+      onclick={onDodaj}
+      disabled={!moznaUtworzycPrzesylke}
+      class="block rounded-md bg-accent px-3 py-2 text-center text-sm font-semibold
+             text-text-on-dark shadow-xs
+             hover:enabled:bg-accent-hover
+             disabled:cursor-not-allowed disabled:opacity-40
+             focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    >
+      + Dodaj przesyłkę
+    </button>
   </div>
+</div>
 
+<!-- Karta tabeli — uproszczony wrapper bez negatywnych marginesów TP.
+     Negatywne marginesy (-mx-4, -mx-6, -mx-8) z oryginalnego wzorca TP powodowały
+     poziomy scroll na całym dokumencie — usunięte na rzecz prostszej struktury.
+     overflow-x-auto: scroll poziomy tylko wewnątrz karty gdy jest dużo przesyłek.
+     overflow-y-auto: scroll pionowy gdy jest dużo produktów. -->
+<div class="overflow-auto rounded-lg shadow-sm outline-1 outline-black/5">
+  <table class="min-w-full divide-y divide-gray-300">
+
+    <!-- colgroup definiuje szerokości kolumn raz dla całej tabeli.
+         Kolumna "Produkt" bez szerokości — rozciąga się na dostępną przestrzeń.
+         Wszystkie kolumny numeryczne: w-32 (obsługuje do 8 cyfr + separator). -->
+    <colgroup>
+      <col />
+      <col class="w-32" />
+      {#each przesylki as _}
+        <col class="w-32" />
+      {/each}
+      <col class="w-32" />
+    </colgroup>
+
+    <thead class="bg-gray-50">
+      <tr>
+
+        <th
+          scope="col"
+          class="sticky left-0 z-20 bg-gray-50 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-text-heading sm:pl-6"
+        >
+          Produkt
+        </th>
+
+        <th
+          scope="col"
+          class="bg-gray-50 px-3 py-3.5 text-right text-sm font-semibold text-text-secondary"
+        >
+          Zamów.
+        </th>
+
+        {#each przesylki as przesylka, i}
+          <th
+            scope="col"
+            onclick={() => onAktywuj(przesylka.id)}
+            class="cursor-pointer px-3 py-3.5 text-center text-sm font-semibold
+                   transition-colors select-none
+                   {aktywnaId === przesylka.id
+                     ? 'bg-accent/10 text-accent'
+                     : 'text-text-heading hover:bg-gray-100'}"
+          >
+            {skrocone ? `P${i + 1}` : `Przesyłka ${i + 1}`}
+          </th>
+        {/each}
+
+        <th
+          scope="col"
+          class="sticky right-0 z-20 bg-gray-50 py-3.5 pl-3 pr-4 text-right text-sm font-semibold text-text-secondary sm:pr-6"
+        >
+          Dostępne
+        </th>
+
+      </tr>
+    </thead>
+
+    <tbody class="divide-y divide-gray-200 bg-white">
+      {#each produkty as produkt}
+        {@const dostepne = obliczDostepne(produkt)}
+        <tr class="hover:bg-gray-50/60">
+
+          <td class="sticky left-0 z-10 bg-white py-2 pl-4 pr-3 text-sm font-medium whitespace-nowrap text-text-primary sm:pl-6">
+            <input
+              type="text"
+              value={produkt.nazwa}
+              onfocus={(e) => e.target.select()}
+              oninput={(e) => naZmianeNazwyProduktu(produkt.id, e)}
+              class="w-full rounded border border-transparent bg-transparent px-2 py-1.5
+                     text-sm font-medium text-text-primary
+                     focus:border-border-focus focus:bg-input-bg focus:outline-none"
+            />
+          </td>
+
+          <td class="bg-white px-2 py-2 text-right text-sm whitespace-nowrap">
+            <input
+              type="text"
+              value={produkt.ilosc}
+              onfocus={(e) => e.target.select()}
+              oninput={(e) => naZmianeIlosciProduktuPodglad(produkt.id, e)}
+              onblur={(e) => naZmianeIlosciProduktu(produkt.id, e)}
+              class="w-full rounded border border-transparent bg-transparent px-2 py-1.5
+                     text-right text-sm text-text-secondary
+                     focus:border-border-focus focus:bg-input-bg focus:outline-none"
+            />
+          </td>
+
+          {#each przesylki as przesylka}
+            <td
+              class="px-2 py-2 text-center whitespace-nowrap
+                     {aktywnaId === przesylka.id ? 'bg-accent/5' : ''}"
+            >
+              <input
+                type="text"
+                value={pobierzIlosc(przesylka, produkt.id)}
+                onfocus={(e) => e.target.select()}
+                oninput={(e) => naZmianeIlosciPodglad(przesylka.id, produkt.id, e)}
+                onblur={(e) => naZmianeIlosci(przesylka.id, produkt.id, e)}
+                class="w-full rounded border border-transparent bg-transparent px-2 py-1.5
+                       text-center text-sm text-text-primary
+                       focus:border-border-focus focus:bg-input-bg focus:outline-none"
+              />
+            </td>
+          {/each}
+
+          <td
+            class="sticky right-0 z-10 py-4 pl-3 pr-4 text-right text-sm font-medium whitespace-nowrap sm:pr-6
+                   {dostepne < 0
+                     ? 'bg-error-bg text-error-text'
+                     : dostepne === 0
+                       ? 'bg-white text-success-text'
+                       : 'bg-warning-bg text-warning-text'}"
+          >
+            {dostepne}
+            {#if dostepne < 0}⚠{:else if dostepne === 0}✓{/if}
+          </td>
+
+        </tr>
+      {/each}
+    </tbody>
+
+    <tfoot>
+      <tr class="border-t-2 border-border-strong">
+
+        <td class="sticky left-0 z-10 bg-gray-50 py-3.5 pl-4 pr-3 text-sm font-semibold text-text-secondary sm:pl-6">
+          Razem
+        </td>
+
+        <td class="bg-gray-50 px-3 py-3.5"></td>
+
+        {#each przesylki as przesylka}
+          <td
+            class="px-3 py-3.5 text-center text-sm font-semibold text-text-primary
+                   {aktywnaId === przesylka.id ? 'bg-accent/5' : 'bg-gray-50'}"
+          >
+            {sumaPrzesylki(przesylka)}
+          </td>
+        {/each}
+
+        <td class="sticky right-0 z-10 bg-gray-50 py-3.5 pl-3 pr-4 sm:pr-6"></td>
+
+      </tr>
+    </tfoot>
+
+  </table>
 </div>

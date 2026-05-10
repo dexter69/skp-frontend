@@ -119,7 +119,7 @@
 <!-- Panel główny (PG): zajmuje resztę ekranu po prawej stronie sidebara.
      margin-left = szerokość sidebara (--sidebar-width).
      Tylko PG scrolluje — nie cała strona. -->
-<main class="ml-(--sidebar-width) h-screen overflow-y-auto bg-bg-primary">
+<main class="ml-(--sidebar-width) h-screen overflow-hidden bg-bg-primary">
   <div class="h-full px-8 py-8">
     {@render children()}
   </div>

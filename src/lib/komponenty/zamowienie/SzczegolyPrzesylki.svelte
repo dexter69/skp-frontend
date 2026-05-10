@@ -1,6 +1,6 @@
 <script>
   // SzczegolyPrzesylki — panel szczegółów aktywnej przesyłki.
-  // Wyświetlany pod tabelą krzyżową w SekcjaPrzesylki.
+  // Wyświetlany jako sticky panel na dole SekcjaPrzesylki.
   // Czysty komponent — dane przez propsy, zmiany przez callbacki.
 
   import WyborOpcji from "$lib/komponenty/WyborOpcji.svelte";
@@ -11,10 +11,10 @@
     numerPrzesylki, // numer porządkowy (1, 2, ...) — do wyświetlenia "Przesyłka N"
     onZmiana,       // callback(zmiany) — aktualizuje dane przesyłki w stanie zamówienia
     onUsun,         // callback() — usuwa tę przesyłkę
+    onZamknij,      // callback() — zamyka panel (ukrywa bez usuwania przesyłki)
   } = $props();
 
   // Opcje typu dostawy — docelowo z API, na razie mock.
-  // id musi odpowiadać wartościom typDostawy w stanie zamówienia.
   const OPCJE_TYPU_DOSTAWY = [
     { id: 'kurier', label: 'Kurier' },
     { id: 'magazyn', label: 'Magazyn' },
@@ -27,7 +27,6 @@
   const czyMaAdres = $derived(przesylka.typDostawy === 'kurier');
 
   // Produkty które jadą tą przesyłką (ilość > 0).
-  // Łączymy pozycje przesyłki z danymi produktów z zamówienia.
   const pozycjeDoWyswietlenia = $derived(
     przesylka.pozycje
       .filter(function(poz) { return poz.ilosc > 0; })
@@ -54,14 +53,14 @@
   );
 </script>
 
-<!-- Kontener panelu — wypełnia przestrzeń przyznaną przez SekcjaPrzesylki (flex-1 min-h-0).
-     flex-col: nagłówek + ciało (dwie kolumny) + uwagi. -->
-<div class="flex h-full min-h-0 flex-col">
+<!-- Kontener panelu — h-full wypełnia stałą wysokość przyznaną przez SekcjaPrzesylki.
+     flex-col: nagłówek + ciało. -->
+<div class="flex h-full flex-col">
 
-  <!-- NAGŁÓWEK — adres/typ po lewej, "Przesyłka N" po prawej, Usuń w rogu -->
+  <!-- NAGŁÓWEK — adres/typ po lewej, kontrolki po prawej -->
   <div class="flex shrink-0 items-start justify-between border-b border-border-default px-5 py-3">
 
-    <!-- Lewa strona: nazwa (bold) + adres (druga linia) -->
+    <!-- Lewa strona: nazwa (bold) + adres (druga linia) — klikalny gdy typ=kurier -->
     <div
       class="flex flex-col gap-0.5
              {czyMaAdres ? 'cursor-pointer hover:opacity-75' : ''}"
@@ -75,7 +74,7 @@
       {/if}
     </div>
 
-    <!-- Prawa strona: numer przesyłki + przycisk Usuń -->
+    <!-- Prawa strona: numer przesyłki + Usuń + Zamknij [×] -->
     <div class="flex items-center gap-3 shrink-0 ml-4">
       <span class="text-sm font-medium text-text-secondary">
         Przesyłka {numerPrzesylki}
@@ -88,6 +87,16 @@
       >
         Usuń
       </button>
+      <!-- Przycisk zamknięcia — ukrywa panel bez usuwania przesyłki.
+           Kliknięcie w kolumnę przesyłki w tabeli ponownie otwiera panel. -->
+      <button
+        type="button"
+        onclick={onZamknij}
+        class="rounded p-1 text-text-secondary hover:bg-bg-secondary hover:text-text-primary transition-colors"
+        title="Zamknij panel"
+      >
+        ✕
+      </button>
     </div>
 
   </div>
@@ -95,7 +104,7 @@
   <!-- CIAŁO — dwie kolumny główne -->
   <div class="flex min-h-0 flex-1">
 
-    <!-- KOLUMNA LEWA: "Co jedzie" — pełna wysokość, scroll wewnętrzny -->
+    <!-- KOLUMNA LEWA: "Co jedzie" — scroll wewnętrzny -->
     <div class="flex w-2/5 min-h-0 flex-col border-r border-border-default">
       <div class="shrink-0 px-5 py-2 text-xs font-semibold uppercase tracking-wide text-text-secondary border-b border-border-default">
         Co jedzie
@@ -121,7 +130,6 @@
             wartosc={przesylka.typDostawy}
             onZmiana={(val) => onZmiana({ typDostawy: val, adres: null, kurier: null })}
           />
-          <!-- Wybór kuriera — widoczny tylko gdy typ = 'kurier' -->
           {#if przesylka.typDostawy === 'kurier'}
             <div class="flex flex-col gap-1">
               <p class="text-xs font-medium text-text-secondary">Kurier</p>
@@ -152,7 +160,7 @@
 
       </div>
 
-      <!-- Dolny wiersz: Uwagi — pod Dostawą i Pakowaniem -->
+      <!-- Dolny wiersz: Uwagi -->
       <div class="shrink-0 px-5 py-3">
         <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-text-secondary">
           Uwagi
