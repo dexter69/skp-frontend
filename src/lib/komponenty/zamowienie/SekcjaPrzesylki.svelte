@@ -181,28 +181,15 @@
 <!-- A: kontener główny — zajmuje całą pozostałą przestrzeń.
      position relative — punkt odniesienia dla absolutnie pozycjonowanego C.
      overflow-hidden — C nie wychodzi poza A. -->
-<div
-  bind:this={refA}
-  class="relative flex-1 overflow-hidden"
-  style="background: rgba(0,0,255,0.05)"
-  id="kontener-A"
->
-  <!-- <p
-    style="position:absolute; top:0; left:0; z-index:100; background:red; color:white; font-size:12px"
-  >
-    topC: {topC} | A: {refA?.offsetHeight} | B: {refB?.offsetHeight}
-  </p> -->
-
+<div bind:this={refA} class="relative flex-1 overflow-hidden" id="kontener-A">
   <!-- B: kontener tabeli — naturalna wysokość, rośnie z zawartością.
        overflow-y-auto — scroll pojawia się gdy B przekracza dostępną przestrzeń w A.
        px-8 py-6: padding wyrównany z resztą sekcji. -->
   <div
     bind:this={refB}
-    class="overflow-y-auto px-8 py-6"
-    style="background: rgba(0,255,0,0.1)"
+    class="overflow-y-auto px-8 py-6 max-h-full"
     id="kontener-B"
   >
-    <!-- <div bind:this={refB} class="overflow-y-auto px-8 py-6"> -->
     <TabelaPrzesylek
       produkty={dane().produkty}
       przesylki={dane().przesylki}
@@ -233,7 +220,11 @@
        mx-6: węższy niż tabela (wyrównany z wewnętrznym paddingiem)
        Ukryty gdy panelWidoczny = false (zamknięty przez użytkownika). -->
   {#if aktywnaId !== null && panelWidoczny}
-    <div class="absolute left-6 right-6 z-10" style="top: {topC}px" id="kontener-C">
+    <div
+      class="absolute left-6 right-6 z-10"
+      style="top: {topC}px"
+      id="kontener-C"
+    >
       <div
         class="overflow-hidden rounded-lg bg-white shadow-sm outline-1 outline-black/5"
         style="height: var(--szczegoly-przesylki-h)"
