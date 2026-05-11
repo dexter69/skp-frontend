@@ -120,7 +120,8 @@
      margin-left = szerokość sidebara (--sidebar-width).
      Tylko PG scrolluje — nie cała strona. -->
 <main class="ml-(--sidebar-width) h-screen overflow-hidden bg-bg-primary">
-  <div class="h-full px-8 py-8">
+  <!-- <div class="h-full px-8 py-8"> -->
+  <div class="h-full flex flex-col px-8 py-8">
     {@render children()}
   </div>
 </main>
