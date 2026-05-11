@@ -1,20 +1,66 @@
 <script>
-  import { getContext } from "svelte";
+  import { getContext, onDestroy, tick } from "svelte";
   import TabelaPrzesylek from "./TabelaPrzesylek.svelte";
   import SzczegolyPrzesylki from "./SzczegolyPrzesylki.svelte";
 
-  // Pobieramy stan zamówienia z contextu.
   const { dane, zaktualizuj } = getContext("zamowienie");
 
   // id aktywnej przesyłki — która kolumna jest wyróżniona i której szczegóły są widoczne.
-  // Inicjalizujemy od razu id pierwszej przesyłki — layout gwarantuje że lista nie jest pusta.
   let aktywnaId = $state(dane().przesylki[0]?.id ?? null);
 
   // Czy panel szczegółów jest widoczny.
-  // Domyślnie true gdy jest aktywna przesyłka — użytkownik może zamknąć przez [×].
   let panelWidoczny = $state(aktywnaId !== null);
 
-  // Oblicza ile każdego produktu jest jeszcze "dostępne" (nie przypisane do żadnej przesyłki).
+  // Referencje do kontenerów A i B — potrzebne dla ResizeObserver i obliczania pozycji C.
+  let refA = $state(null);
+  let refB = $state(null);
+
+  // Pozycja top panelu C — obliczana dynamicznie przez ResizeObserver.
+  // Domyślnie 0 — zaktualizowane po pierwszym renderze.
+  let topC = $state(0);
+
+  // Wysokość panelu szczegółów — pobierana z CSS variable.
+  // Używamy stałej bo ResizeObserver nie śledzi zmian CSS variables.
+  const WYSOKOSC_C = 280; // musi odpowiadać --szczegoly-przesylki-h w app.css
+  const MARGINES = 24; // px-6 = 24px odstęp od dołu kontenera A
+
+  // Oblicza pozycję top panelu C.
+  // C siedzi tuż pod tabelą B, chyba że B jest za duże —
+  // wtedy C przykleja się do dołu A z marginesem.
+  function obliczTopC() {
+    if (!refA || !refB) return;
+    const wysokoscA = refA.offsetHeight;
+    const wysokoscB = refB.offsetHeight;
+    topC = Math.min(wysokoscB, wysokoscA - WYSOKOSC_C - MARGINES);
+  }
+
+  // ResizeObserver obserwuje B — gdy tabela zmienia wysokość (dodano/usunięto produkt),
+  // przeliczamy pozycję C. Używamy ResizeObserver zamiast $effect bo reaguje
+  // na zmiany rozmiaru DOM, nie na zmiany stanu Svelte.
+  let observer = null;
+
+  // Uruchamiamy observer gdy refB jest dostępne.
+  // $effect odpala się po każdym renderze — sprawdzamy czy refB się zmieniło.
+  $effect(() => {
+    if (!refB) return;
+
+    observer = new ResizeObserver(function () {
+      obliczTopC();
+    });
+    observer.observe(refB);
+
+    // Pierwsze obliczenie po zamontowaniu
+    obliczTopC();
+
+    return function () {
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+    };
+  });
+
+  // Oblicza ile każdego produktu jest jeszcze "dostępne".
   function obliczDostepne() {
     const dostepne = {};
     dane().produkty.forEach(function (p) {
@@ -30,7 +76,6 @@
     return dostepne;
   }
 
-  // Czy można dodać nową przesyłkę?
   function moznaUtworzycPrzesylke() {
     const dostepne = obliczDostepne();
     return Object.values(dostepne).some(function (ilosc) {
@@ -38,7 +83,6 @@
     });
   }
 
-  // Dodaje nową przesyłkę z dostępnymi ilościami produktów.
   function dodajPrzesylke() {
     if (!moznaUtworzycPrzesylke()) return;
 
@@ -69,8 +113,6 @@
     panelWidoczny = true;
   }
 
-  // Usuwa przesyłkę o podanym id. Zawsze zostaje przynajmniej jedna.
-  // TODO: dodać potwierdzenie usunięcia
   function usunPrzesylke(id) {
     if (dane().przesylki.length <= 1) return;
     const nowe = dane().przesylki.filter(function (p) {
@@ -82,13 +124,11 @@
     }
   }
 
-  // Aktywuje przesyłkę — otwiera panel szczegółów jeśli był zamknięty.
   function aktywujPrzesylke(id) {
     aktywnaId = id;
     panelWidoczny = true;
   }
 
-  // Aktualizuje dane konkretnej przesyłki.
   function zaktualizujPrzesylke(id, zmiany) {
     const nowe = dane().przesylki.map(function (p) {
       if (p.id !== id) return p;
@@ -97,7 +137,6 @@
     zaktualizuj({ przesylki: nowe });
   }
 
-  // Aktualizuje ilość produktu w zamówieniu.
   function zmienIloscProduktu(produktId, ilosc) {
     const nowe = dane().produkty.map(function (p) {
       if (p.id !== produktId) return p;
@@ -106,7 +145,6 @@
     zaktualizuj({ produkty: nowe });
   }
 
-  // Aktualizuje nazwę produktu w zamówieniu.
   function zmienNazweProduktu(produktId, nazwa) {
     const nowe = dane().produkty.map(function (p) {
       if (p.id !== produktId) return p;
@@ -116,18 +154,55 @@
   }
 </script>
 
-<!-- Zewnętrzny kontener — wypełnia całą przestrzeń PG.
-     overflow-hidden: scroll obsługiwany wewnętrznie przez tabelę.
-     pb: dolny padding rezerwuje miejsce na fixed panel szczegółów
-     żeby tabela nie była przykryta przez panel gdy jest mało produktów. -->
-<div class="h-full overflow-hidden">
-  <!-- <div class="max-h-full overflow-y-auto p-6"> -->
-  <div
-    class="overflow-y-auto p-6"
-    style={panelWidoczny
-      ? `height: calc(100% - var(--szczegoly-przesylki-h))`
-      : "height: 100%"}
+<!-- Nagłówek sekcji — poza kontenerem A, nie scrolluje.
+     px-8: wyrównany z nagłówkiem zamówienia. -->
+<div
+  class="shrink-0 flex items-center justify-between px-8 py-4 border-b border-border-default"
+>
+  <div>
+    <h2 class="text-base font-semibold text-text-heading">Przesyłki</h2>
+    <p class="mt-1 text-sm text-text-secondary">
+      Rozdysponuj produkty zamówienia między przesyłki.
+    </p>
+  </div>
+  <button
+    type="button"
+    onclick={dodajPrzesylke}
+    disabled={!moznaUtworzycPrzesylke()}
+    class="block rounded-md bg-accent px-3 py-2 text-center text-sm font-semibold
+           text-text-on-dark shadow-xs
+           hover:enabled:bg-accent-hover
+           disabled:cursor-not-allowed disabled:opacity-40"
   >
+    + Dodaj przesyłkę
+  </button>
+</div>
+
+<!-- A: kontener główny — zajmuje całą pozostałą przestrzeń.
+     position relative — punkt odniesienia dla absolutnie pozycjonowanego C.
+     overflow-hidden — C nie wychodzi poza A. -->
+<div
+  bind:this={refA}
+  class="relative flex-1 overflow-hidden"
+  style="background: rgba(0,0,255,0.05)"
+  id="kontener-A"
+>
+  <!-- <p
+    style="position:absolute; top:0; left:0; z-index:100; background:red; color:white; font-size:12px"
+  >
+    topC: {topC} | A: {refA?.offsetHeight} | B: {refB?.offsetHeight}
+  </p> -->
+
+  <!-- B: kontener tabeli — naturalna wysokość, rośnie z zawartością.
+       overflow-y-auto — scroll pojawia się gdy B przekracza dostępną przestrzeń w A.
+       px-8 py-6: padding wyrównany z resztą sekcji. -->
+  <div
+    bind:this={refB}
+    class="overflow-y-auto px-8 py-6"
+    style="background: rgba(0,255,0,0.1)"
+    id="kontener-B"
+  >
+    <!-- <div bind:this={refB} class="overflow-y-auto px-8 py-6"> -->
     <TabelaPrzesylek
       produkty={dane().produkty}
       przesylki={dane().przesylki}
@@ -150,31 +225,32 @@
       onZmianaUazwyProduktu={zmienNazweProduktu}
     />
   </div>
-</div>
 
-<!-- Panel szczegółów — fixed, zawsze przyklejony do dołu ekranu.
-     left-(--sidebar-width): zaczyna się za sidebarem.
-     right-0: kończy przy prawej krawędzi ekranu.
-     px-6 pb-6: marginesy boczne i dolny padding.
-     Działa poprawnie na każdej rozdzielczości — niezależnie od wysokości tabeli. -->
-{#if aktywnaId !== null && panelWidoczny}
-  <div class="fixed bottom-0 left-(--sidebar-width) right-0 px-6 pb-6 z-30">
-    <div
-      class="overflow-hidden rounded-lg bg-white shadow-sm outline-1 outline-black/5"
-      style="height: var(--szczegoly-przesylki-h)"
-    >
-      {#each dane().przesylki as przesylka, i}
-        {#if przesylka.id === aktywnaId}
-          <SzczegolyPrzesylki
-            {przesylka}
-            produkty={dane().produkty}
-            numerPrzesylki={i + 1}
-            onZmiana={(zmiany) => zaktualizujPrzesylke(przesylka.id, zmiany)}
-            onUsun={() => usunPrzesylke(przesylka.id)}
-            onZamknij={() => (panelWidoczny = false)}
-          />
-        {/if}
-      {/each}
+  <!-- C: panel szczegółów — absolutnie pozycjonowany względem A.
+       top obliczany dynamicznie przez ResizeObserver:
+       - normalnie: tuż pod tabelą B
+       - gdy B za duże: przyklejony do dołu A z marginesem
+       mx-6: węższy niż tabela (wyrównany z wewnętrznym paddingiem)
+       Ukryty gdy panelWidoczny = false (zamknięty przez użytkownika). -->
+  {#if aktywnaId !== null && panelWidoczny}
+    <div class="absolute left-6 right-6 z-10" style="top: {topC}px" id="kontener-C">
+      <div
+        class="overflow-hidden rounded-lg bg-white shadow-sm outline-1 outline-black/5"
+        style="height: var(--szczegoly-przesylki-h)"
+      >
+        {#each dane().przesylki as przesylka, i}
+          {#if przesylka.id === aktywnaId}
+            <SzczegolyPrzesylki
+              {przesylka}
+              produkty={dane().produkty}
+              numerPrzesylki={i + 1}
+              onZmiana={(zmiany) => zaktualizujPrzesylke(przesylka.id, zmiany)}
+              onUsun={() => usunPrzesylke(przesylka.id)}
+              onZamknij={() => (panelWidoczny = false)}
+            />
+          {/if}
+        {/each}
+      </div>
     </div>
-  </div>
-{/if}
+  {/if}
+</div>

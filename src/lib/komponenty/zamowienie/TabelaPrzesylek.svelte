@@ -12,36 +12,36 @@
   // - onblur:  waliduje i koryguje wartość w polu
 
   let {
-    produkty,                // lista produktów z zamówienia [{ id, nazwa, ilosc }]
-    przesylki,               // lista przesyłek [{ id, pozycje: [{ produkt_id, ilosc }] }]
-    aktywnaId,               // id aktywnej przesyłki (wyróżniona kolumna)
-    moznaUtworzycPrzesylke,  // bool — czy przycisk "Dodaj" jest aktywny
-    onAktywuj,               // callback(id) — kliknięcie nagłówka przesyłki
-    onDodaj,                 // callback() — kliknięcie "Dodaj przesyłkę"
-    onZmianaIlosci,          // callback(przesylka_id, produkt_id, ilosc) — zmiana ilości w przesyłce
-    onZmianaIlosciProduktu,  // callback(produkt_id, ilosc) — zmiana zamówionej ilości produktu
-    onZmianaUazwyProduktu,   // callback(produkt_id, nazwa) — zmiana nazwy produktu
+    produkty, // lista produktów z zamówienia [{ id, nazwa, ilosc }]
+    przesylki, // lista przesyłek [{ id, pozycje: [{ produkt_id, ilosc }] }]
+    aktywnaId, // id aktywnej przesyłki (wyróżniona kolumna)
+    moznaUtworzycPrzesylke, // bool — czy przycisk "Dodaj" jest aktywny
+    onAktywuj, // callback(id) — kliknięcie nagłówka przesyłki
+    onDodaj, // callback() — kliknięcie "Dodaj przesyłkę"
+    onZmianaIlosci, // callback(przesylka_id, produkt_id, ilosc) — zmiana ilości w przesyłce
+    onZmianaIlosciProduktu, // callback(produkt_id, ilosc) — zmiana zamówionej ilości produktu
+    onZmianaUazwyProduktu, // callback(produkt_id, nazwa) — zmiana nazwy produktu
   } = $props();
 
   const PROG_SKRACANIA = 4;
   const skrocone = $derived(przesylki.length > PROG_SKRACANIA);
 
   function pobierzIlosc(przesylka, produktId) {
-    const pozycja = przesylka.pozycje.find(function(poz) {
+    const pozycja = przesylka.pozycje.find(function (poz) {
       return poz.produkt_id === produktId;
     });
     return pozycja ? pozycja.ilosc : 0;
   }
 
   function obliczDostepne(produkt) {
-    const przypisane = przesylki.reduce(function(suma, przesylka) {
+    const przypisane = przesylki.reduce(function (suma, przesylka) {
       return suma + pobierzIlosc(przesylka, produkt.id);
     }, 0);
     return produkt.ilosc - przypisane;
   }
 
   function sumaPrzesylki(przesylka) {
-    return przesylka.pozycje.reduce(function(suma, poz) {
+    return przesylka.pozycje.reduce(function (suma, poz) {
       return suma + poz.ilosc;
     }, 0);
   }
@@ -86,30 +86,6 @@
   }
 </script>
 
-<!-- Nagłówek — tytuł po lewej, przycisk po prawej (wzorzec TP) -->
-<div class="sm:flex sm:items-center mb-4">
-  <div class="sm:flex-auto">
-    <h2 class="text-base font-semibold text-text-heading">Przesyłki</h2>
-    <p class="mt-1 text-sm text-text-secondary">
-      Rozdysponuj produkty zamówienia między przesyłki.
-    </p>
-  </div>
-  <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-    <button
-      type="button"
-      onclick={onDodaj}
-      disabled={!moznaUtworzycPrzesylke}
-      class="block rounded-md bg-accent px-3 py-2 text-center text-sm font-semibold
-             text-text-on-dark shadow-xs
-             hover:enabled:bg-accent-hover
-             disabled:cursor-not-allowed disabled:opacity-40
-             focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-    >
-      + Dodaj przesyłkę
-    </button>
-  </div>
-</div>
-
 <!-- Karta tabeli — uproszczony wrapper bez negatywnych marginesów TP.
      Negatywne marginesy (-mx-4, -mx-6, -mx-8) z oryginalnego wzorca TP powodowały
      poziomy scroll na całym dokumencie — usunięte na rzecz prostszej struktury.
@@ -117,7 +93,6 @@
      overflow-y-auto: scroll pionowy gdy jest dużo produktów. -->
 <div class="overflow-auto rounded-lg shadow-sm outline-1 outline-black/5">
   <table class="min-w-full divide-y divide-gray-300">
-
     <!-- colgroup definiuje szerokości kolumn raz dla całej tabeli.
          Kolumna "Produkt" bez szerokości — rozciąga się na dostępną przestrzeń.
          Wszystkie kolumny numeryczne: w-32 (obsługuje do 8 cyfr + separator). -->
@@ -132,7 +107,6 @@
 
     <thead class="bg-gray-50">
       <tr>
-
         <th
           scope="col"
           class="sticky left-0 z-20 bg-gray-50 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-text-heading sm:pl-6"
@@ -154,8 +128,8 @@
             class="cursor-pointer px-3 py-3.5 text-center text-sm font-semibold
                    transition-colors select-none
                    {aktywnaId === przesylka.id
-                     ? 'bg-accent/10 text-accent'
-                     : 'text-text-heading hover:bg-gray-100'}"
+              ? 'bg-accent/10 text-accent'
+              : 'text-text-heading hover:bg-gray-100'}"
           >
             {skrocone ? `P${i + 1}` : `Przesyłka ${i + 1}`}
           </th>
@@ -167,7 +141,6 @@
         >
           Dostępne
         </th>
-
       </tr>
     </thead>
 
@@ -175,8 +148,9 @@
       {#each produkty as produkt}
         {@const dostepne = obliczDostepne(produkt)}
         <tr class="hover:bg-gray-50/60">
-
-          <td class="sticky left-0 z-10 bg-white py-2 pl-4 pr-3 text-sm font-medium whitespace-nowrap text-text-primary sm:pl-6">
+          <td
+            class="sticky left-0 z-10 bg-white py-2 pl-4 pr-3 text-sm font-medium whitespace-nowrap text-text-primary sm:pl-6"
+          >
             <input
               type="text"
               value={produkt.nazwa}
@@ -210,7 +184,8 @@
                 type="text"
                 value={pobierzIlosc(przesylka, produkt.id)}
                 onfocus={(e) => e.target.select()}
-                oninput={(e) => naZmianeIlosciPodglad(przesylka.id, produkt.id, e)}
+                oninput={(e) =>
+                  naZmianeIlosciPodglad(przesylka.id, produkt.id, e)}
                 onblur={(e) => naZmianeIlosci(przesylka.id, produkt.id, e)}
                 class="w-full rounded border border-transparent bg-transparent px-2 py-1.5
                        text-center text-sm text-text-primary
@@ -222,23 +197,23 @@
           <td
             class="sticky right-0 z-10 py-4 pl-3 pr-4 text-right text-sm font-medium whitespace-nowrap sm:pr-6
                    {dostepne < 0
-                     ? 'bg-error-bg text-error-text'
-                     : dostepne === 0
-                       ? 'bg-white text-success-text'
-                       : 'bg-warning-bg text-warning-text'}"
+              ? 'bg-error-bg text-error-text'
+              : dostepne === 0
+                ? 'bg-white text-success-text'
+                : 'bg-warning-bg text-warning-text'}"
           >
             {dostepne}
             {#if dostepne < 0}⚠{:else if dostepne === 0}✓{/if}
           </td>
-
         </tr>
       {/each}
     </tbody>
 
     <tfoot>
       <tr class="border-t-2 border-border-strong">
-
-        <td class="sticky left-0 z-10 bg-gray-50 py-3.5 pl-4 pr-3 text-sm font-semibold text-text-secondary sm:pl-6">
+        <td
+          class="sticky left-0 z-10 bg-gray-50 py-3.5 pl-4 pr-3 text-sm font-semibold text-text-secondary sm:pl-6"
+        >
           Razem
         </td>
 
@@ -253,10 +228,9 @@
           </td>
         {/each}
 
-        <td class="sticky right-0 z-10 bg-gray-50 py-3.5 pl-3 pr-4 sm:pr-6"></td>
-
+        <td class="sticky right-0 z-10 bg-gray-50 py-3.5 pl-3 pr-4 sm:pr-6"
+        ></td>
       </tr>
     </tfoot>
-
   </table>
 </div>

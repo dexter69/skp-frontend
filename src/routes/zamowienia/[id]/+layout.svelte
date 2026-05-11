@@ -114,19 +114,21 @@
   </div>
 {/snippet}
 
-<div
-  class="shrink-0 border-b border-border-default bg-bg-primary px-8 py-4 flex items-center gap-x-3"
->
-  <h1 class="text-lg font-semibold text-text-heading">{tytul}</h1>
-  {#if badge}
-    <span
-      class="inline-flex items-center rounded-md bg-border-default px-2 py-1 text-xs font-medium text-text-secondary"
-    >
-      {badge}
-    </span>
-  {/if}
-</div>
+<div class="flex flex-col h-full">
+  <div
+    class="shrink-0 border-b border-border-default bg-bg-primary px-8 py-4 flex items-center gap-x-3"
+  >
+    <h1 class="text-lg font-semibold text-text-heading">{tytul}</h1>
+    {#if badge}
+      <span
+        class="inline-flex items-center rounded-md bg-border-default px-2 py-1 text-xs font-medium text-text-secondary"
+      >
+        {badge}
+      </span>
+    {/if}
+  </div>
 
-<div class="flex-1 overflow-clip">
-  {@render children()}
+  <div class="flex flex-col flex-1 overflow-hidden">
+    {@render children()}
+  </div>
 </div>
