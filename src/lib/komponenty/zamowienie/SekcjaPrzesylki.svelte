@@ -181,13 +181,13 @@
 <!-- A: kontener główny — zajmuje całą pozostałą przestrzeń.
      position relative — punkt odniesienia dla absolutnie pozycjonowanego C.
      overflow-hidden — C nie wychodzi poza A. -->
-<div bind:this={refA} class="relative flex-1 overflow-hidden" id="kontener-A">
+<div bind:this={refA} class="relative flex-1 overflow-hidden px-8 pb-4" id="kontener-A">
   <!-- B: kontener tabeli — naturalna wysokość, rośnie z zawartością.
        overflow-y-auto — scroll pojawia się gdy B przekracza dostępną przestrzeń w A.
        px-8 py-6: padding wyrównany z resztą sekcji. -->
   <div
     bind:this={refB}
-    class="overflow-y-auto px-8 py-6 max-h-full"
+    class="overflow-y-auto max-h-full px-8"
     id="kontener-B"
   >
     <TabelaPrzesylek

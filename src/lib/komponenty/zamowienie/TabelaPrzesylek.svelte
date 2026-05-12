@@ -91,8 +91,8 @@
      poziomy scroll na całym dokumencie — usunięte na rzecz prostszej struktury.
      overflow-x-auto: scroll poziomy tylko wewnątrz karty gdy jest dużo przesyłek.
      overflow-y-auto: scroll pionowy gdy jest dużo produktów. -->
-<div class="overflow-auto rounded-lg shadow-sm outline-1 outline-black/5">
-  <table class="min-w-full divide-y divide-gray-300">
+<div class="rounded-lg shadow-sm outline-1 outline-black/5">
+  <table class="min-w-full border-separate border-spacing-0">
     <!-- colgroup definiuje szerokości kolumn raz dla całej tabeli.
          Kolumna "Produkt" bez szerokości — rozciąga się na dostępną przestrzeń.
          Wszystkie kolumny numeryczne: w-32 (obsługuje do 8 cyfr + separator). -->
@@ -109,14 +109,14 @@
       <tr>
         <th
           scope="col"
-          class="sticky left-0 z-20 bg-gray-50 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-text-heading sm:pl-6"
+          class="sticky top-0 z-20 left-0 bg-gray-50 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-text-heading sm:pl-6"
         >
           Produkt
         </th>
 
         <th
           scope="col"
-          class="bg-gray-50 px-3 py-3.5 text-right text-sm font-semibold text-text-secondary"
+          class="sticky top-0 z-20 bg-gray-50 px-3 py-3.5 text-right text-sm font-semibold text-text-secondary"
         >
           Zamów.
         </th>
@@ -125,10 +125,10 @@
           <th
             scope="col"
             onclick={() => onAktywuj(przesylka.id)}
-            class="cursor-pointer px-3 py-3.5 text-center text-sm font-semibold
+            class="sticky top-0 z-20 cursor-pointer px-3 py-3.5 text-center text-sm font-semibold
                    transition-colors select-none
                    {aktywnaId === przesylka.id
-              ? 'bg-accent/10 text-accent'
+              ? 'bg-blue-50 text-accent'
               : 'text-text-heading hover:bg-gray-100'}"
           >
             {skrocone ? `P${i + 1}` : `Przesyłka ${i + 1}`}
@@ -137,7 +137,7 @@
 
         <th
           scope="col"
-          class="sticky right-0 z-20 bg-gray-50 py-3.5 pl-3 pr-4 text-right text-sm font-semibold text-text-secondary sm:pr-6"
+          class="sticky top-0 z-20 right-0 bg-gray-50 py-3.5 pl-3 pr-4 text-right text-sm font-semibold text-text-secondary sm:pr-6"
         >
           Dostępne
         </th>
