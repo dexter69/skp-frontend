@@ -5,7 +5,7 @@
   import Platnosci from "$lib/komponenty/zamowienie/Platnosci.svelte";
   import NotatkaZamowienia from "$lib/komponenty/zamowienie/NotatkaZamowienia.svelte";
   import ListaProduktow from "$lib/komponenty/zamowienie/ListaProduktow.svelte";
-  import SekcjaPrzesylki from "$lib/komponenty/zamowienie/SekcjaPrzesylki.svelte";
+  import SekcjaPrzesylki from "$lib/komponenty/zamowienie/przesylki/SekcjaPrzesylki.svelte";
   import DevPanel from "$lib/komponenty/DevPanel.svelte";
 
   // Pobieramy z kontekstu zamówienia:
@@ -35,7 +35,22 @@
           <KartaKlienta
             klient={dane().klient}
             typKlienta={dane().typKlienta}
-            onWybor={(k) => zaktualizuj({ klient: k, typKlienta: null })}
+            onWybor={(k) => {
+              const domyslnyAdres =
+                k.adresy.find(function (a) {
+                  return a.typ === "domyslny";
+                }) || k.adresy[0];
+              const przesylkiZAdresem = dane().przesylki.map(function (p) {
+                return Object.assign({}, p, {
+                  adres: p.typDostawy === "kurier" ? domyslnyAdres : null,
+                });
+              });
+              zaktualizuj({
+                klient: k,
+                typKlienta: null,
+                przesylki: przesylkiZAdresem,
+              });
+            }}
             onZmianaTypu={(v) => zaktualizuj({ typKlienta: v })}
           />
         </div>

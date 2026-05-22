@@ -5,34 +5,24 @@
     tworzDomyslnaPrzesylke,
   } from "$lib/stany/zamowienie.svelte.js";
 
-  let { children } = $props();
+  // data pochodzi z load() w +layout.js — mock lub docelowo API.
+  let { children, data } = $props();
 
-  // Stan zamówienia tworzony przez dedykowaną funkcję z osobnego pliku.
-  // TODO: zamiast mock danych, pobierać z API na podstawie id z URL
-  const zamowienie = tworzStanZamowienia({
-    id: 123,
-    produkty: [
-      { id: -1, nazwa: "Karty wizytowe", ilosc: 500, cena: 2.69 },
-      { id: -2, nazwa: "Ulotki A5", ilosc: 500, cena: 1.2 },
-    ],
-  });
+  // Stan zamówienia tworzony na podstawie danych z load().
+  // Gdy load() zostanie podpięty do API — tu nic się nie zmienia.
+  const zamowienie = tworzStanZamowienia(data.zamowienie);
 
   // Definicja sekcji formularza zamówienia.
-  // disabled: true — sekcja widoczna w sidebarze ale niedostępna (placeholder na przyszłość)
   const sekcje = [
     { id: "klient", label: "Klient i produkty" },
     { id: "przesylki", label: "Przesyłki" },
     { id: "podsumowanie", label: "Podsumowanie", disabled: true },
   ];
 
-  // Aktywna sekcja — domyślnie pierwsza
   let aktywnaSekcja = $state("klient");
 
   // Przełącza aktywną sekcję.
-  // Przy pierwszym wejściu do sekcji "przesylki": inicjalizuje domyślną przesyłkę
-  // jeśli lista jest pusta i są produkty w zamówieniu.
-  // Inicjalizacja tu (nie w SekcjaPrzesylki) — dane gotowe zanim komponent się zamontuje,
-  // dzięki czemu SekcjaPrzesylki nie potrzebuje $effect.
+  // Przy pierwszym wejściu do "przesylki": inicjalizuje domyślną przesyłkę.
   function wybierzSekcje(sekcja) {
     if (sekcja.disabled) return;
 
@@ -41,31 +31,29 @@
       zamowienie.przesylki.length === 0 &&
       zamowienie.produkty.length > 0
     ) {
-      zamowienie.przesylki = [tworzDomyslnaPrzesylke(zamowienie.produkty)];
+      const domyslnyAdres = zamowienie.klient
+        ? zamowienie.klient.adresy.find(function (a) {
+            return a.typ === "domyslny";
+          }) || zamowienie.klient.adresy[0]
+        : null;
+      const przesylka = tworzDomyslnaPrzesylke(zamowienie.produkty);
+      przesylka.adres = domyslnyAdres;
+      zamowienie.przesylki = [przesylka];
     }
 
     aktywnaSekcja = sekcja.id;
   }
 
-  // badge: pokazuje 'Szkic' gdy zamówienie nie ma numeru (nieopublikowane).
   const badge = $derived(zamowienie.numer ? null : "Szkic");
 
-  // Tytuł w headerze PG:
-  // — zamówienie z numerem: 'Zamówienie 256/26 MS'
-  // — szkic bez numeru: 'Nowe zamówienie'
   const tytul = $derived(
     zamowienie.numer ? `Zamówienie ${zamowienie.numer}` : "Nowe zamówienie",
   );
 
-  // Wstrzykujemy snippet nawigacjaSekcji do górnej strefy globalnego sidebara.
-  // onDestroy czyści górną strefę gdy użytkownik opuszcza widok zamówienia.
   const sidebar = getContext("sidebar");
   sidebar.ustawKontekst(nawigacjaSekcji);
   onDestroy(() => sidebar.wyczyscKontekst());
 
-  // Udostępniamy stan zamówienia dla podstron przez Context API.
-  // dane() — funkcja zwracająca aktualny stan — zawsze świeże dane
-  // zaktualizuj() — częściowa aktualizacja, obsługuje zagnieżdżone obiekty przez merge
   setContext("zamowienie", {
     aktywnaSekcja: () => aktywnaSekcja,
     dane: () => zamowienie,
