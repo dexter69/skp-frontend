@@ -4,7 +4,6 @@
   // Czysty komponent — dane przez propsy, zmiany przez callbacki.
 
   import WyborOpcji from "$lib/komponenty/WyborOpcji.svelte";
-  import WyborAdresu from "$lib/komponenty/zamowienie/przesylki/WyborAdresu.svelte";
 
   let {
     przesylka, // obiekt przesyłki { typDostawy, adres, kurier, pozycje }
@@ -13,6 +12,7 @@
     styleKolumn, // CSS variables dla proporcji kolumn (--col-lewa, --col-prawa)
     onZmiana, // callback(zmiany) — aktualizuje dane przesyłki
     onZmianaIlosci, // callback(produkt_id, ilosc) — zmiana ilości produktu w przesyłce
+    onOtworzWyborAdresu,  // callback() — otwiera modal wyboru adresu (renderowany wyżej)
   } = $props();
 
   // Opcje typu dostawy — docelowo z API, na razie mock.
@@ -76,7 +76,7 @@
     return isNaN(n) || n < 0 ? 0 : n;
   }
 
-  let modalAdresuOtwarty = $state(false);
+  // let modalAdresuOtwarty = $state(false);
 </script>
 
 <div class="flex h-full" style={styleKolumn}>
@@ -120,8 +120,8 @@
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
           <div
             role="button"
-            tabindex="-1"
-            onclick={() => (modalAdresuOtwarty = true)}
+            tabindex="-1"            
+            onclick={() => onOtworzWyborAdresu?.()}
             class="rounded-lg bg-white shadow-sm p-3 cursor-pointer hover:bg-bg-primary transition-colors"
           >
             <p class="text-sm font-semibold text-text-heading">
@@ -221,11 +221,5 @@
         {/each}
       </div>
     {/if}
-  </div>
-  <WyborAdresu
-    {adresy}
-    wybranyAdres={przesylka.adres}
-    bind:otwarty={modalAdresuOtwarty}
-    onWybor={(adres) => onZmiana({ adres })}
-  />
+  </div>  
 </div>

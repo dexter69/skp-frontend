@@ -17,6 +17,7 @@
     onUsun,           // callback() — usuwa przesyłkę
     onZamknij,        // callback() — zamyka panel
     onRozwin,         // callback() — przełącza między małym a dużym panelem
+    onOtworzWyborAdresu,  // callback() — otwiera modal wyboru adresu (renderowany wyżej)
   } = $props();
 
   // Definicja tabów — łatwo dodać nowy tab lub zmienić kolejność.
@@ -113,6 +114,7 @@
         {styleKolumn}
         {onZmiana}
         {onZmianaIlosci}
+        {onOtworzWyborAdresu}
       />
     {/if}
 

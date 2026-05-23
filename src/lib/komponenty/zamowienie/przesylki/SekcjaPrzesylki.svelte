@@ -2,11 +2,15 @@
   import { getContext } from "svelte";
   import TabelaPrzesylek from "./TabelaPrzesylek.svelte";
   import SzczegolyPrzesylki from "./SzczegolyPrzesylki.svelte";
+  import WyborAdresu from "./WyborAdresu.svelte";
 
   const { dane, zaktualizuj } = getContext("zamowienie");
 
   // id aktywnej przesyłki — która kolumna jest wyróżniona i której szczegóły są widoczne.
   let aktywnaId = $state(dane().przesylki[0]?.id ?? null);
+
+  let modalAdresuOtwarty = $state(false);
+  let aktywnaIdPrzesylkiDlaModala = $state(null);
 
   // Czy panel szczegółów (C) jest widoczny.
   // Użytkownik może go zamknąć przez [×] — ponownie otwiera się po kliknięciu w kolumnę przesyłki.
@@ -24,8 +28,8 @@
   let topC = $state(0);
 
   // Wysokości panelu C — muszą odpowiadać zmiennym CSS w app.css.
-  const WYSOKOSC_C_MALA = 280;   // --szczegoly-przesylki-h
-  const WYSOKOSC_C_DUZA = null;  // --szczegoly-przesylki-h-duze (60vh — obliczana dynamicznie)
+  const WYSOKOSC_C_MALA = 280; // --szczegoly-przesylki-h
+  const WYSOKOSC_C_DUZA = null; // --szczegoly-przesylki-h-duze (60vh — obliczana dynamicznie)
   // Margines od dołu kontenera A.
   const MARGINES = 16;
   // Odstęp między tabelą a panelem szczegółów.
@@ -55,19 +59,25 @@
   // $effect używany tylko do podpięcia observera (reakcja na mount), nie do synchronizacji stanu.
   $effect(() => {
     if (!refB) return;
-    const observer = new ResizeObserver(function() { obliczTopC(); });
+    const observer = new ResizeObserver(function () {
+      obliczTopC();
+    });
     observer.observe(refB);
     obliczTopC();
-    return function() { observer.disconnect(); };
+    return function () {
+      observer.disconnect();
+    };
   });
 
   // Oblicza ile każdego produktu jest jeszcze "dostępne" (nie przypisane do żadnej przesyłki).
   // Wynik: mapa { produkt_id → dostępna_ilość }
   function obliczDostepne() {
     const dostepne = {};
-    dane().produkty.forEach(function(p) { dostepne[p.id] = p.ilosc; });
-    dane().przesylki.forEach(function(przesylka) {
-      przesylka.pozycje.forEach(function(poz) {
+    dane().produkty.forEach(function (p) {
+      dostepne[p.id] = p.ilosc;
+    });
+    dane().przesylki.forEach(function (przesylka) {
+      przesylka.pozycje.forEach(function (poz) {
         if (dostepne[poz.produkt_id] !== undefined) {
           dostepne[poz.produkt_id] -= poz.ilosc;
         }
@@ -79,25 +89,33 @@
   // Czy można dodać nową przesyłkę?
   function moznaUtworzycPrzesylke() {
     const dostepne = obliczDostepne();
-    return Object.values(dostepne).some(function(ilosc) { return ilosc > 0; });
+    return Object.values(dostepne).some(function (ilosc) {
+      return ilosc > 0;
+    });
   }
 
   // Dodaje nową przesyłkę z dostępnymi ilościami produktów.
   function dodajPrzesylke() {
     if (!moznaUtworzycPrzesylke()) return;
     const dostepne = obliczDostepne();
-    const minId = dane().przesylki.reduce(function(min, p) { return p.id < min ? p.id : min; }, 0);
+    const minId = dane().przesylki.reduce(function (min, p) {
+      return p.id < min ? p.id : min;
+    }, 0);
     const noweId = minId - 1;
     const nowaPrzesylka = {
       id: noweId,
       nazwa: null,
-      typDostawy: 'kurier',
+      typDostawy: "kurier",
       adres: null,
       kurier: null,
-      uwagi: '',
-      pozycje: dane().produkty
-        .filter(function(p) { return dostepne[p.id] > 0; })
-        .map(function(p) { return { produkt_id: p.id, ilosc: dostepne[p.id] }; })
+      uwagi: "",
+      pozycje: dane()
+        .produkty.filter(function (p) {
+          return dostepne[p.id] > 0;
+        })
+        .map(function (p) {
+          return { produkt_id: p.id, ilosc: dostepne[p.id] };
+        }),
     };
     zaktualizuj({ przesylki: [...dane().przesylki, nowaPrzesylka] });
     aktywnaId = noweId;
@@ -108,9 +126,13 @@
   // TODO: dodać potwierdzenie usunięcia
   function usunPrzesylke(id) {
     if (dane().przesylki.length <= 1) return;
-    const nowe = dane().przesylki.filter(function(p) { return p.id !== id; });
+    const nowe = dane().przesylki.filter(function (p) {
+      return p.id !== id;
+    });
     zaktualizuj({ przesylki: nowe });
-    if (aktywnaId === id) { aktywnaId = nowe[0].id; }
+    if (aktywnaId === id) {
+      aktywnaId = nowe[0].id;
+    }
   }
 
   // Aktywuje przesyłkę — wyróżnia kolumnę w tabeli i otwiera panel szczegółów.
@@ -121,7 +143,7 @@
 
   // Aktualizuje dane konkretnej przesyłki (adres, uwagi, typDostawy itp.).
   function zaktualizujPrzesylke(id, zmiany) {
-    const nowe = dane().przesylki.map(function(p) {
+    const nowe = dane().przesylki.map(function (p) {
       if (p.id !== id) return p;
       return Object.assign({}, p, zmiany);
     });
@@ -132,12 +154,14 @@
   // Jeśli produkt nie ma jeszcze pozycji w przesyłce — dodaje nową.
   // Używane zarówno przez tabelę krzyżową jak i panel szczegółów.
   function zmienIloscWPrzesylce(przesylkaId, produktId, ilosc) {
-    const nowe = dane().przesylki.map(function(p) {
+    const nowe = dane().przesylki.map(function (p) {
       if (p.id !== przesylkaId) return p;
-      const istnieje = p.pozycje.some(function(poz) { return poz.produkt_id === produktId; });
+      const istnieje = p.pozycje.some(function (poz) {
+        return poz.produkt_id === produktId;
+      });
       let nowePozycje;
       if (istnieje) {
-        nowePozycje = p.pozycje.map(function(poz) {
+        nowePozycje = p.pozycje.map(function (poz) {
           if (poz.produkt_id !== produktId) return poz;
           return Object.assign({}, poz, { ilosc: ilosc });
         });
@@ -152,7 +176,7 @@
 
   // Aktualizuje ilość produktu w zamówieniu (single source of truth).
   function zmienIloscProduktu(produktId, ilosc) {
-    const nowe = dane().produkty.map(function(p) {
+    const nowe = dane().produkty.map(function (p) {
       if (p.id !== produktId) return p;
       return Object.assign({}, p, { ilosc: ilosc });
     });
@@ -161,7 +185,7 @@
 
   // Aktualizuje nazwę produktu w zamówieniu (single source of truth).
   function zmienNazweProduktu(produktId, nazwa) {
-    const nowe = dane().produkty.map(function(p) {
+    const nowe = dane().produkty.map(function (p) {
       if (p.id !== produktId) return p;
       return Object.assign({}, p, { nazwa: nazwa });
     });
@@ -177,7 +201,9 @@
 </script>
 
 <!-- Nagłówek sekcji — poza kontenerem A, nie scrolluje wraz z tabelą. -->
-<div class="shrink-0 flex items-center justify-between px-8 py-4 border-b border-border-default">
+<div
+  class="shrink-0 flex items-center justify-between px-8 py-4 border-b border-border-default"
+>
   <div>
     <h2 class="text-base font-semibold text-text-heading">Przesyłki</h2>
     <p class="mt-1 text-sm text-text-secondary">
@@ -199,7 +225,6 @@
 
 <!-- A: kontener główny — punkt odniesienia dla absolutnie pozycjonowanego panelu C. -->
 <div bind:this={refA} class="relative flex-1 overflow-hidden px-8 pb-4">
-
   <!-- B: kontener tabeli — rośnie z zawartością, scrolluje gdy za duża. -->
   <div bind:this={refB} class="overflow-y-auto max-h-full px-8">
     <TabelaPrzesylek
@@ -209,7 +234,8 @@
       moznaUtworzycPrzesylke={moznaUtworzycPrzesylke()}
       onAktywuj={aktywujPrzesylke}
       onDodaj={dodajPrzesylke}
-      onZmianaIlosci={(przesylkaId, produktId, ilosc) => zmienIloscWPrzesylce(przesylkaId, produktId, ilosc)}
+      onZmianaIlosci={(przesylkaId, produktId, ilosc) =>
+        zmienIloscWPrzesylce(przesylkaId, produktId, ilosc)}
       onZmianaIlosciProduktu={zmienIloscProduktu}
       onZmianaUazwyProduktu={zmienNazweProduktu}
     />
@@ -223,7 +249,9 @@
     <div class="absolute left-6 right-6 z-10" style="top: {topC}px">
       <div
         class="overflow-hidden rounded-lg bg-white shadow-sm outline-1 outline-black/5"
-        style="height: {panelRozwiniety ? pobierzWysokoscC() + 'px' : 'var(--szczegoly-przesylki-h)'}"
+        style="height: {panelRozwiniety
+          ? pobierzWysokoscC() + 'px'
+          : 'var(--szczegoly-przesylki-h)'}"
       >
         {#each dane().przesylki as przesylka, i}
           {#if przesylka.id === aktywnaId}
@@ -233,15 +261,23 @@
               numerPrzesylki={i + 1}
               rozwiniety={panelRozwiniety}
               onZmiana={(zmiany) => zaktualizujPrzesylke(przesylka.id, zmiany)}
-              onZmianaIlosci={(produktId, ilosc) => zmienIloscWPrzesylce(przesylka.id, produktId, ilosc)}
+              onZmianaIlosci={(produktId, ilosc) =>
+                zmienIloscWPrzesylce(przesylka.id, produktId, ilosc)}
               onUsun={() => usunPrzesylke(przesylka.id)}
-              onZamknij={() => panelWidoczny = false}
+              onZamknij={() => (panelWidoczny = false)}
               onRozwin={przelaczRozwiniety}
+              onOtworzWyborAdresu={() => { aktywnaIdPrzesylkiDlaModala = aktywnaId; modalAdresuOtwarty = true; }}
             />
           {/if}
         {/each}
       </div>
     </div>
   {/if}
-
 </div>
+
+<WyborAdresu
+  adresy={dane().klient?.adresy ?? []}
+  wybranyAdres={dane().przesylki.find(function(p) { return p.id === aktywnaIdPrzesylkiDlaModala; })?.adres ?? null}
+  bind:otwarty={modalAdresuOtwarty}
+  onWybor={(adres) => zaktualizujPrzesylke(aktywnaIdPrzesylkiDlaModala, { adres })}
+/>
