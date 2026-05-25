@@ -4,7 +4,7 @@
 //
 // Dane trafiają do +layout.svelte przez $props() jako `data`.
 
-import { znajdzKlienta } from '$lib/api/mockDane.js';
+import { znajdzKlienta, mockProdukty } from '$lib/api/mockDane.js';
 
 export async function load({ params }) {
   // TODO: zastąpić fetch do API:
@@ -21,10 +21,7 @@ export async function load({ params }) {
       id: params.id,
       // klient: klient,
       klient: null,
-      produkty: [
-        { id: -1, nazwa: 'Karty wizytowe', ilosc: 500, cena: 2.69 },
-        { id: -2, nazwa: 'Ulotki A5', ilosc: 500, cena: 1.20 },
-      ],
+      produkty: mockProdukty,
     }
   };
 }
