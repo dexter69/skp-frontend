@@ -24,10 +24,14 @@
   // Formatuje number do stringa z przecinkiem i min 2 miejscami po przecinku (max 4).
   // Przykład: 2.69 → '2,69' | 2.6912 → '2,6912' | 0 → '0,00'
   function formatujCene(wartosc) {
-    if (wartosc === null || wartosc === undefined || wartosc === "") return "0,00";
+    if (wartosc === null || wartosc === undefined || wartosc === "")
+      return "0,00";
     const liczba = Number(wartosc);
     if (isNaN(liczba)) return "0,00";
-    const miejsca = Math.max(2, Math.min(4, (liczba.toString().split(".")[1] ?? "").length));
+    const miejsca = Math.max(
+      2,
+      Math.min(4, (liczba.toString().split(".")[1] ?? "").length),
+    );
     return liczba.toFixed(miejsca).replace(".", ",");
   }
 
@@ -47,7 +51,6 @@
 </script>
 
 <tr class="border-b border-border-default last:border-0">
-
   <!-- Nazwa — zajmuje całą dostępną szerokość, aktualizowana przy każdym znaku (oninput) -->
   <td class="px-3 py-1.5">
     <input
@@ -74,6 +77,12 @@
         e.target.value = val;
         onZmiana?.({ ...produkt, ilosc: val });
       }}
+      onkeydown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.target.closest("tr").querySelectorAll("input")[2].focus();
+        }
+      }}
       class="w-full rounded bg-transparent px-2 text-right text-sm text-text-primary
              outline-none focus:bg-input-bg focus:outline-1
              focus:-outline-offset-1 focus:outline-input-border transition-all"
@@ -88,6 +97,21 @@
       bind:value={cenaStr}
       onfocus={(e) => e.target.select()}
       onblur={handleCenaBlur}
+      onkeydown={(e) => {
+        if ((e.key === "Tab" && !e.shiftKey) || e.key === "Enter") {
+          const nastepnyWiersz = e.target.closest("tr").nextElementSibling;
+          const cel = nastepnyWiersz
+            ? nastepnyWiersz.querySelectorAll("input")[1]
+            : e.target
+                .closest("tbody")
+                .querySelectorAll("tr")[0]
+                .querySelectorAll("input")[1];
+          if (cel) {
+            e.preventDefault();
+            cel.focus();
+          }
+        }
+      }}
       class="w-full rounded bg-transparent px-2 text-right text-sm text-text-primary
              outline-none focus:bg-input-bg focus:outline-1
              focus:-outline-offset-1 focus:outline-input-border transition-all"
@@ -98,11 +122,11 @@
   <td class="w-8 px-2 py-1.5">
     <button
       type="button"
+      tabindex="-1"
       onclick={() => onUsun?.()}
       class="text-text-muted hover:text-red-500 transition-colors"
     >
       <IconTrash size={16} stroke={1.5} />
     </button>
   </td>
-
 </tr>
