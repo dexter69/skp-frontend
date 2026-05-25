@@ -65,8 +65,8 @@
       </div>
 
       <!-- Wiersz 3: notatka (dane do faktury + uwagi w tabach).
-           Textarea z auto-resize — rośnie wraz z treścią, zaczyna od 6 linii. -->
-      <div>
+           Textarea z auto-resize — rośnie wraz z treścią, zaczyna od 6 linii. -->           
+      <div  class="flex-1 min-h-0">
         <NotatkaZamowienia
           daneDoFaktury={dane().daneDoFaktury}
           uwagi={dane().uwagi}

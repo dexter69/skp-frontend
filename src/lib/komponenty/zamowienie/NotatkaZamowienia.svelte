@@ -19,18 +19,11 @@
   // — daneDoFaktury, uwagi: aktualne wartości pól
   // — onZmiana: callback wywoływany przy każdej zmianie, przekazuje zmienione pole
   let { daneDoFaktury = "", uwagi = "", onZmiana } = $props();
-
-  // Auto-resize textarea — wywołaj przy każdym oninput.
-  // Najpierw reset do 'auto' żeby textarea mogła się też skurczyć przy usuwaniu tekstu,
-  // potem ustawienie na scrollHeight = faktyczna wysokość treści.
-  function autoResize(element) {
-    element.style.height = "auto";
-    element.style.height = element.scrollHeight + "px";
-  }
+  
 </script>
 
 <!-- Karta z białym tłem i subtelnym cieniem — spójna z pozostałymi kartami formularza. -->
-<div class="flex flex-col rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5">
+<div class="flex flex-col h-full rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5">
 
   <!-- Nav z tabami — styl z Tailwind Plus, linki zastąpione przyciskami.
        Aktywny tab: podkreślenie + kolor akcentu przez inline style
@@ -57,22 +50,20 @@
        rows="6" — minimalna wysokość startowa (6 linii).
        resize-none — wyłączone ręczne przeciąganie przez użytkownika,
        bo wysokość zarządzana jest przez auto-resize. -->
-  <div class="p-3">
+  <div class="flex-1 min-h-0 p-3">
     {#if aktywnyTab === ""}
       <textarea
         value={daneDoFaktury}
-        oninput={(e) => { autoResize(e.target); onZmiana({ daneDoFaktury: e.target.value }); }}
+        oninput={(e) => { onZmiana({ daneDoFaktury: e.target.value }); }}
         placeholder="Dane do faktury..."
-        rows="6"
-        class="w-full resize-none rounded-lg bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
+        class="w-full h-full resize-none overflow-y-auto rounded-lg bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
       ></textarea>
     {:else}
       <textarea
         value={uwagi}
-        oninput={(e) => { autoResize(e.target); onZmiana({ uwagi: e.target.value }); }}
-        placeholder="Uwagi do zamówienia..."
-        rows="6"
-        class="w-full resize-none rounded-lg bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
+        oninput={(e) => { onZmiana({ uwagi: e.target.value }); }}
+        placeholder="Uwagi do zamówienia..."        
+        class="w-full h-full resize-none overflow-y-auto rounded-lg bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
       ></textarea>
     {/if}
   </div>
