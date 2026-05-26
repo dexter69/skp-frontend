@@ -78,29 +78,31 @@
     <!-- Prawa kolumna: lista produktów zamówienia.
          Własny scroll wewnętrzny — niezależny od lewej kolumny. -->
     <div
-      class="flex w-1/2 shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-sm xl:w-4/10"
+      class="flex min-h-0 w-1/2 shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-sm xl:w-4/10"
     >
       <div class="px-4 py-3">
         <h3 class="text-xl font-semibold text-text-heading">Produkty</h3>
       </div>
-      <ListaProduktow
-        produkty={dane().produkty}
-        onZmiana={(lista) => {
-          const aktywneId = new Set(
-            lista.map(function (p) {
-              return p.id;
-            }),
-          );
-          const przesylkiOdswiezione = dane().przesylki.map(function (prz) {
-            return Object.assign({}, prz, {
-              pozycje: prz.pozycje.filter(function (poz) {
-                return aktywneId.has(poz.produkt_id);
+      <div class="flex-1 min-h-0 overflow-hidden">
+        <ListaProduktow
+          produkty={dane().produkty}
+          onZmiana={(lista) => {
+            const aktywneId = new Set(
+              lista.map(function (p) {
+                return p.id;
               }),
+            );
+            const przesylkiOdswiezione = dane().przesylki.map(function (prz) {
+              return Object.assign({}, prz, {
+                pozycje: prz.pozycje.filter(function (poz) {
+                  return aktywneId.has(poz.produkt_id);
+                }),
+              });
             });
-          });
-          zaktualizuj({ produkty: lista, przesylki: przesylkiOdswiezione });
-        }}
-      />
+            zaktualizuj({ produkty: lista, przesylki: przesylkiOdswiezione });
+          }}
+        />
+      </div>
     </div>
   </div>
 {:else if aktywnaSekcja() === "przesylki"}
