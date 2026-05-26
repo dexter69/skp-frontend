@@ -143,12 +143,28 @@
 
   // Aktualizuje dane konkretnej przesyłki (adres, uwagi, typDostawy itp.).
   function zaktualizujPrzesylke(id, zmiany) {
+    // Gdy zmieniamy typ dostawy na 'kurier' — przywracamy domyślny adres klienta.
+    // Przy innych typach adres jest już resetowany przez TabDostawa (adres: null).
+    if (zmiany.typDostawy === "kurier" && dane().klient) {
+      const domyslnyAdres =
+        dane().klient.adresy.find(function (a) {
+          return a.typ === "domyslny";
+        }) || dane().klient.adresy[0];
+      zmiany = Object.assign({}, zmiany, { adres: domyslnyAdres });
+    }
     const nowe = dane().przesylki.map(function (p) {
       if (p.id !== id) return p;
       return Object.assign({}, p, zmiany);
     });
     zaktualizuj({ przesylki: nowe });
   }
+  // function zaktualizujPrzesylke(id, zmiany) {
+  //   const nowe = dane().przesylki.map(function (p) {
+  //     if (p.id !== id) return p;
+  //     return Object.assign({}, p, zmiany);
+  //   });
+  //   zaktualizuj({ przesylki: nowe });
+  // }
 
   // Aktualizuje ilość produktu w przesyłce.
   // Jeśli produkt nie ma jeszcze pozycji w przesyłce — dodaje nową.
@@ -265,9 +281,16 @@
               onZmianaIlosci={(produktId, ilosc) =>
                 zmienIloscWPrzesylce(przesylka.id, produktId, ilosc)}
               onUsun={() => usunPrzesylke(przesylka.id)}
-              onZamknij={() => { panelWidoczny = false; aktywnaId = null; }}
+              onZamknij={() => {
+                panelWidoczny = false;
+                aktywnaId = null;
+              }}
               onRozwin={przelaczRozwiniety}
-              onOtworzWyborAdresu={() => { aktywnaIdPrzesylkiDlaModala = aktywnaId; modalAdresuOtwarty = true; }}
+              onOtworzWyborAdresu={() => {
+                aktywnaIdPrzesylkiDlaModala = aktywnaId;
+                modalAdresuOtwarty = true;
+              }}
+              czyJedynaPrzesylka={dane().przesylki.length <= 1}
             />
           {/if}
         {/each}
@@ -278,7 +301,10 @@
 
 <WyborAdresu
   adresy={dane().klient?.adresy ?? []}
-  wybranyAdres={dane().przesylki.find(function(p) { return p.id === aktywnaIdPrzesylkiDlaModala; })?.adres ?? null}
+  wybranyAdres={dane().przesylki.find(function (p) {
+    return p.id === aktywnaIdPrzesylkiDlaModala;
+  })?.adres ?? null}
   bind:otwarty={modalAdresuOtwarty}
-  onWybor={(adres) => zaktualizujPrzesylke(aktywnaIdPrzesylkiDlaModala, { adres })}
+  onWybor={(adres) =>
+    zaktualizujPrzesylke(aktywnaIdPrzesylkiDlaModala, { adres })}
 />

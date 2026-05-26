@@ -3,21 +3,27 @@
   // Orkiestrator: zarządza tabami i nagłówkiem, deleguje zawartość do podkomponentów.
   // Czysty komponent — dane przez propsy, zmiany przez callbacki.
 
-  import { IconArrowsMaximize, IconArrowsMinimize, IconTrash, IconX } from "@tabler/icons-svelte-runes";
+  import {
+    IconArrowsMaximize,
+    IconArrowsMinimize,
+    IconTrash,
+    IconX,
+  } from "@tabler/icons-svelte-runes";
   import TabDostawa from "./TabDostawa.svelte";
   import TabPakowanieUwagi from "./TabPakowanieUwagi.svelte";
 
   let {
-    przesylka,        // obiekt przesyłki { id, nazwa, typDostawy, adres, kurier, uwagi, pozycje }
-    produkty,         // lista wszystkich produktów zamówienia
-    numerPrzesylki,   // numer porządkowy (1, 2, ...) — wyświetlany subtelnie w nagłówku
-    rozwiniety,       // bool — czy panel jest w stanie rozwiniętym (duża wysokość)
-    onZmiana,         // callback(zmiany) — aktualizuje dane przesyłki
-    onZmianaIlosci,   // callback(produkt_id, ilosc) — zmiana ilości produktu w przesyłce
-    onUsun,           // callback() — usuwa przesyłkę
-    onZamknij,        // callback() — zamyka panel
-    onRozwin,         // callback() — przełącza między małym a dużym panelem
-    onOtworzWyborAdresu,  // callback() — otwiera modal wyboru adresu (renderowany wyżej)
+    przesylka, // obiekt przesyłki { id, nazwa, typDostawy, adres, kurier, uwagi, pozycje }
+    produkty, // lista wszystkich produktów zamówienia
+    numerPrzesylki, // numer porządkowy (1, 2, ...) — wyświetlany subtelnie w nagłówku
+    rozwiniety, // bool — czy panel jest w stanie rozwiniętym (duża wysokość)
+    onZmiana, // callback(zmiany) — aktualizuje dane przesyłki
+    onZmianaIlosci, // callback(produkt_id, ilosc) — zmiana ilości produktu w przesyłce
+    onUsun, // callback() — usuwa przesyłkę
+    onZamknij, // callback() — zamyka panel
+    onRozwin, // callback() — przełącza między małym a dużym panelem
+    onOtworzWyborAdresu, // callback() — otwiera modal wyboru adresu (renderowany wyżej)
+    czyJedynaPrzesylka,
   } = $props();
 
   // Definicja tabów — łatwo dodać nowy tab lub zmienić kolejność.
@@ -38,22 +44,24 @@
 
 <!-- Kontener panelu — h-full wypełnia wysokość przyznaną przez SekcjaPrzesylki. -->
 <div class="flex h-full flex-col">
-
   <!-- NAGŁÓWEK: taby po lewej, kontrolki po prawej -->
-  <div class="flex shrink-0 items-center justify-between border-b border-gray-200 px-4">
-
+  <div
+    class="flex shrink-0 items-center justify-between border-b border-gray-200 px-4"
+  >
     <!-- Taby — styl z NotatkaZamowienia.svelte -->
     <nav class="flex">
       <ul class="flex gap-x-6 text-sm/6 font-semibold text-gray-500">
         {#each TABY as tab}
           <li>
             <button
-              onclick={() => aktywnyTab = tab.klucz}
+              onclick={() => (aktywnyTab = tab.klucz)}
               class="py-3 transition-colors duration-150
                      {aktywnyTab === tab.klucz
-                       ? 'border-b-2 text-accent'
-                       : 'hover:text-gray-700'}"
-              style={aktywnyTab === tab.klucz ? "border-color: var(--accent)" : ""}
+                ? 'border-b-2 text-accent'
+                : 'hover:text-gray-700'}"
+              style={aktywnyTab === tab.klucz
+                ? "border-color: var(--accent)"
+                : ""}
             >
               {tab.etykieta}
             </button>
@@ -64,8 +72,9 @@
 
     <!-- Kontrolki: numer przesyłki + rozwiń + usuń + zamknij -->
     <div class="flex items-center gap-1">
-
-      <span class="text-xs font-medium text-text-muted mr-1">#{numerPrzesylki}</span>
+      <span class="text-sm font-medium text-text-primary mr-1"
+        >#{numerPrzesylki}</span
+      >
 
       <!-- Rozwiń/zwiń panel -->
       <button
@@ -80,13 +89,18 @@
           <IconArrowsMaximize size={16} stroke={1.5} />
         {/if}
       </button>
-
-      <!-- Usuń przesyłkę -->
+      
       <button
         type="button"
         onclick={onUsun}
-        title="Usuń przesyłkę"
-        class="rounded p-1 text-error-text hover:bg-error-bg transition-colors"
+        disabled={czyJedynaPrzesylka}
+        title={czyJedynaPrzesylka
+          ? "Nie można usunąć jedynej przesyłki"
+          : "Usuń przesyłkę"}
+        class="rounded p-1 transition-colors
+         {czyJedynaPrzesylka
+          ? 'text-text-muted cursor-not-allowed'
+          : 'text-error-text hover:bg-error-bg'}"
       >
         <IconTrash size={16} stroke={1.5} />
       </button>
@@ -100,13 +114,11 @@
       >
         <IconX size={16} stroke={1.5} />
       </button>
-
     </div>
   </div>
 
   <!-- ZAWARTOŚĆ TABÓW — min-h-0 dla poprawnego scroll wewnątrz flex -->
   <div class="min-h-0 flex-1">
-
     {#if aktywnyTab === "dostawa"}
       <TabDostawa
         {przesylka}
@@ -115,17 +127,13 @@
         {onZmiana}
         {onZmianaIlosci}
         {onOtworzWyborAdresu}
+        {czyJedynaPrzesylka}
+        onUsunPrzesylke={onUsun}
       />
     {/if}
 
     {#if aktywnyTab === "szczegoly"}
-      <TabPakowanieUwagi
-        {przesylka}
-        {styleKolumn}
-        {onZmiana}
-      />
+      <TabPakowanieUwagi {przesylka} {styleKolumn} {onZmiana} />
     {/if}
-
   </div>
-
 </div>

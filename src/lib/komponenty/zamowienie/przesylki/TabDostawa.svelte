@@ -4,6 +4,7 @@
   // Czysty komponent — dane przez propsy, zmiany przez callbacki.
 
   import WyborOpcji from "$lib/komponenty/WyborOpcji.svelte";
+  import { IconTrash } from "@tabler/icons-svelte-runes";
 
   let {
     przesylka, // obiekt przesyłki { typDostawy, adres, kurier, pozycje }
@@ -13,6 +14,8 @@
     onZmiana, // callback(zmiany) — aktualizuje dane przesyłki
     onZmianaIlosci, // callback(produkt_id, ilosc) — zmiana ilości produktu w przesyłce
     onOtworzWyborAdresu, // callback() — otwiera modal wyboru adresu (renderowany wyżej)
+    onUsunPrzesylke, // callback() — usuwa całą przesyłkę gdy ostatni produkt usunięty
+    czyJedynaPrzesylka,
   } = $props();
 
   // Opcje typu dostawy — docelowo z API, na razie mock.
@@ -35,6 +38,13 @@
 
   // Czy typ dostawy wymaga wyboru kuriera?
   const czyWyborKuriera = $derived(przesylka.typDostawy === "kurier");
+
+  // Kosz przy produkcie nie jest klikalny, gdy nie można tego produktu usunąć.
+  const zablokowanyKosz = $derived(
+    przesylka.pozycje.filter(function (p) {
+      return p.ilosc > 0;
+    }).length <= 1 && czyJedynaPrzesylka,
+  );
 
   // Zmiana typu dostawy resetuje adres i kuriera.
   function zmienTypDostawy(nowyTyp) {
@@ -76,7 +86,20 @@
     return isNaN(n) || n < 0 ? 0 : n;
   }
 
-  // let modalAdresuOtwarty = $state(false);
+  function usunPozycje(produktId) {
+    const ostatniProdukt =
+      przesylka.pozycje.filter(function (p) {
+        return p.ilosc > 0;
+      }).length <= 1;
+
+    if (ostatniProdukt && czyJedynaPrzesylka) return;
+
+    if (ostatniProdukt) {
+      onUsunPrzesylke?.();
+    } else {
+      onZmianaIlosci(produktId, 0);
+    }
+  }
 </script>
 
 <div class="flex h-full" style={styleKolumn}>
@@ -161,64 +184,61 @@
       Co jedzie
     </p>
 
-    {#if pozycjeDoWyswietlenia.length === 0}
-      <p class="text-sm text-text-muted">
-        Brak produktów — wpisz ilości w tabeli powyżej.
-      </p>
-    {:else if pozycjeDoWyswietlenia.length > PROG_DWOCH_KOLUMN}
+    {#snippet wiersz(poz, dwieKolumny)}
+      <div
+        class="flex items-center gap-1 min-w-0 {dwieKolumny
+          ? 'break-inside-avoid mb-1'
+          : ''}"
+      >
+        <span
+          class="flex-1 min-w-0 truncate text-sm text-text-primary"
+          title={poz.nazwa}
+        >
+          {poz.nazwa}
+        </span>
+        <input
+          type="text"
+          value={poz.ilosc}
+          onfocus={(e) => e.target.select()}
+          oninput={(e) =>
+            onZmianaIlosci(poz.produkt_id, parsujPodglad(e.target.value))}
+          onblur={(e) => {
+            const ilosc = parsujIlosc(e.target.value);
+            e.target.value = ilosc;
+            onZmianaIlosci(poz.produkt_id, ilosc);
+          }}
+          class="w-20 shrink-0 rounded border border-transparent bg-transparent
+             px-1.5 py-0.5 text-right text-sm text-text-primary
+             focus:border-border-focus focus:bg-input-bg focus:outline-none"
+        />
+        <button
+          type="button"
+          tabindex="-1"
+          disabled={zablokowanyKosz}
+          title={zablokowanyKosz
+            ? "Nie można usunąć — jedyna przesyłka z jednym produktem"
+            : "Usuń produkt z przesyłki"}
+          onclick={() => usunPozycje(poz.produkt_id)}
+          class="shrink-0 rounded p-0.5 transition-colors
+             {zablokowanyKosz
+            ? 'text-text-muted cursor-not-allowed'
+            : 'text-text-muted hover:text-error-text'}"
+        >
+          <IconTrash size={14} stroke={1.5} />
+        </button>
+      </div>
+    {/snippet}
+
+    {#if pozycjeDoWyswietlenia.length > PROG_DWOCH_KOLUMN}
       <div class="columns-2 gap-x-3">
         {#each pozycjeDoWyswietlenia as poz}
-          <div class="flex items-center gap-1 min-w-0 break-inside-avoid mb-1">
-            <span
-              class="flex-1 min-w-0 truncate text-sm text-text-primary"
-              title={poz.nazwa}
-            >
-              {poz.nazwa}
-            </span>
-            <input
-              type="text"
-              value={poz.ilosc}
-              onfocus={(e) => e.target.select()}
-              oninput={(e) =>
-                onZmianaIlosci(poz.produkt_id, parsujPodglad(e.target.value))}
-              onblur={(e) => {
-                const ilosc = parsujIlosc(e.target.value);
-                e.target.value = ilosc;
-                onZmianaIlosci(poz.produkt_id, ilosc);
-              }}
-              class="w-16 shrink-0 rounded border border-transparent bg-transparent
-                       px-1.5 py-0.5 text-right text-sm text-text-primary
-                       focus:border-border-focus focus:bg-input-bg focus:outline-none"
-            />
-          </div>
+          {@render wiersz(poz, true)}
         {/each}
       </div>
     {:else}
       <div class="flex flex-col gap-1">
         {#each pozycjeDoWyswietlenia as poz}
-          <div class="flex items-center gap-1 min-w-0">
-            <span
-              class="flex-1 min-w-0 truncate text-sm text-text-primary"
-              title={poz.nazwa}
-            >
-              {poz.nazwa}
-            </span>
-            <input
-              type="text"
-              value={poz.ilosc}
-              onfocus={(e) => e.target.select()}
-              oninput={(e) =>
-                onZmianaIlosci(poz.produkt_id, parsujPodglad(e.target.value))}
-              onblur={(e) => {
-                const ilosc = parsujIlosc(e.target.value);
-                e.target.value = ilosc;
-                onZmianaIlosci(poz.produkt_id, ilosc);
-              }}
-              class="w-16 shrink-0 rounded border border-transparent bg-transparent
-                       px-1.5 py-0.5 text-right text-sm text-text-primary
-                       focus:border-border-focus focus:bg-input-bg focus:outline-none"
-            />
-          </div>
+          {@render wiersz(poz, false)}
         {/each}
       </div>
     {/if}
