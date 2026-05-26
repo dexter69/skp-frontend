@@ -21,7 +21,7 @@ export async function load({ params }) {
       id: params.id,
       // klient: klient,
       klient: null,
-      produkty: mockProdukty,
+      produkty: [], //mockProdukty,
     }
   };
 }

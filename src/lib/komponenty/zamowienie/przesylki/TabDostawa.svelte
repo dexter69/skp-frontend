@@ -12,7 +12,7 @@
     styleKolumn, // CSS variables dla proporcji kolumn (--col-lewa, --col-prawa)
     onZmiana, // callback(zmiany) — aktualizuje dane przesyłki
     onZmianaIlosci, // callback(produkt_id, ilosc) — zmiana ilości produktu w przesyłce
-    onOtworzWyborAdresu,  // callback() — otwiera modal wyboru adresu (renderowany wyżej)
+    onOtworzWyborAdresu, // callback() — otwiera modal wyboru adresu (renderowany wyżej)
   } = $props();
 
   // Opcje typu dostawy — docelowo z API, na razie mock.
@@ -113,17 +113,18 @@
 
     {#if czyWyborKuriera}
       <div class="flex flex-col gap-1">
-        <p class="text-xs font-medium text-text-secondary">Adres dostawy</p>
-
         {#if przesylka.adres}
           <!-- Karta z adresem — klikalna, otwiera WyborAdresu -->
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
           <div
             role="button"
-            tabindex="-1"            
+            tabindex="-1"
             onclick={() => onOtworzWyborAdresu?.()}
-            class="rounded-lg bg-white shadow-sm p-3 cursor-pointer hover:bg-bg-primary transition-colors"
+            class="rounded-lg border border-border-subtle bg-white p-3 cursor-pointer hover:bg-bg-primary transition-colors focus:outline-none"
           >
+            <p class="text-xs font-medium text-text-secondary">
+              Adres dostawy:
+            </p>
             <p class="text-sm font-semibold text-text-heading">
               {przesylka.adres.nazwa}
             </p>
@@ -221,5 +222,5 @@
         {/each}
       </div>
     {/if}
-  </div>  
+  </div>
 </div>

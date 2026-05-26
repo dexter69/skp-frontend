@@ -226,7 +226,7 @@
 <!-- A: kontener główny — punkt odniesienia dla absolutnie pozycjonowanego panelu C. -->
 <div bind:this={refA} class="relative flex-1 overflow-hidden px-8 pb-4">
   <!-- B: kontener tabeli — rośnie z zawartością, scrolluje gdy za duża. -->
-  <div bind:this={refB} class="overflow-y-auto max-h-full px-8">
+  <div bind:this={refB} class="overflow-y-auto max-h-full">
     <TabelaPrzesylek
       produkty={dane().produkty}
       przesylki={dane().przesylki}
@@ -243,10 +243,11 @@
 
   <!-- C: panel szczegółów — absolutnie pozycjonowany, top obliczany przez ResizeObserver.
        Wysokość zależy od stanu rozwinięcia:
-       - mały: --szczegoly-przesylki-h (280px)
+       - mały: --szczegoly-przesylki-h (~285px)
        - duży: 60% wysokości kontenera A (~60vh) -->
   {#if aktywnaId !== null && panelWidoczny}
-    <div class="absolute left-6 right-6 z-10" style="top: {topC}px">
+    <!-- left-x i right-y decydują o szerokości panelu. -->
+    <div class="absolute left-14 right-14 z-10" style="top: {topC}px">
       <div
         class="overflow-hidden rounded-lg bg-white shadow-sm outline-1 outline-black/5"
         style="height: {panelRozwiniety
@@ -264,7 +265,7 @@
               onZmianaIlosci={(produktId, ilosc) =>
                 zmienIloscWPrzesylce(przesylka.id, produktId, ilosc)}
               onUsun={() => usunPrzesylke(przesylka.id)}
-              onZamknij={() => (panelWidoczny = false)}
+              onZamknij={() => { panelWidoczny = false; aktywnaId = null; }}
               onRozwin={przelaczRozwiniety}
               onOtworzWyborAdresu={() => { aktywnaIdPrzesylkiDlaModala = aktywnaId; modalAdresuOtwarty = true; }}
             />

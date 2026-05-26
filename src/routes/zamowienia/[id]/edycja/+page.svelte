@@ -65,8 +65,8 @@
       </div>
 
       <!-- Wiersz 3: notatka (dane do faktury + uwagi w tabach).
-           Textarea z auto-resize — rośnie wraz z treścią, zaczyna od 6 linii. -->           
-      <div  class="flex-1 min-h-0">
+           Textarea z auto-resize — rośnie wraz z treścią, zaczyna od 6 linii. -->
+      <div class="flex-1 min-h-0">
         <NotatkaZamowienia
           daneDoFaktury={dane().daneDoFaktury}
           uwagi={dane().uwagi}
@@ -85,7 +85,21 @@
       </div>
       <ListaProduktow
         produkty={dane().produkty}
-        onZmiana={(lista) => zaktualizuj({ produkty: lista })}
+        onZmiana={(lista) => {
+          const aktywneId = new Set(
+            lista.map(function (p) {
+              return p.id;
+            }),
+          );
+          const przesylkiOdswiezione = dane().przesylki.map(function (prz) {
+            return Object.assign({}, prz, {
+              pozycje: prz.pozycje.filter(function (poz) {
+                return aktywneId.has(poz.produkt_id);
+              }),
+            });
+          });
+          zaktualizuj({ produkty: lista, przesylki: przesylkiOdswiezione });
+        }}
       />
     </div>
   </div>
