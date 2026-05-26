@@ -80,8 +80,8 @@
     <div
       class="flex w-1/2 shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-sm xl:w-4/10"
     >
-      <div class="border-b border-border-default px-4 py-3">
-        <h3 class="text-2xl font-semibold text-text-heading">Produkty</h3>
+      <div class="px-4 py-3">
+        <h3 class="text-xl font-semibold text-text-heading">Produkty</h3>
       </div>
       <ListaProduktow
         produkty={dane().produkty}
