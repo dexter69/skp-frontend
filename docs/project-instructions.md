@@ -67,6 +67,64 @@ techniczne, fragmenty kodu).
 **Nieaktywne obszary (nie sugeruj zmian):**
 - Reszta projektu działa stabilnie — traktuj jako "czytaj tylko"
 
+### Strategia migracji bazy danych
+
+Aplikacja ma ponad 23 tys. zamówień w bazie i 40–100 aktywnych zamówień
+w dowolnym momencie. Baza i stary kod muszą działać bez przerwy.
+
+**Zasada nadrzędna: nie dotykamy starego kodu.**
+
+- Nowe zamówienia obsługują nowe kontrolery API (`*ApiController`) + nowe modele
+- Nowe modele używają `$useTable` wskazującym na istniejące tabele gdzie potrzeba
+- Nowe API zapisuje równolegle do nowych tabel ORAZ do starej tabeli `cards`
+  (szkielet rekordu: name, quantity, price, order_id, customer_id, status=PRIV)
+  — dzięki temu stary kod nadal widzi karty i działa bez zmian
+- Stary kod nie wie o istnieniu nowych tabel
+
+**Konwencja nazewnictwa nowego kodu:**
+Nowe kontrolery i modele mają sufiks `Api` — łatwo je odróżnić od starych:
+```
+OrdersApiController.php   → model: OrderApi      ($useTable = 'orders')
+CardsApiController.php    → model: CardApi        ($useTable = 'cards')
+ShipmentsApiController.php → model: ShipmentApi
+```
+
+**Zmiany w bazie danych:**
+Stosujemy ręczne skrypty SQL przechowywane w `inne/migracje/` z nazwą
+zawierającą nr (kolejność skryptów) i opis, np. `001_nowe_tabele_produkty_przesylki.sql`.
+NIE używamy CakePHP Migrations plugin.
+
+### Nowe tabele (zaprojektowane, jeszcze nie utworzone)
+
+```
+card_templates        — przepis produkcji fizycznej karty (spec. a_*, r_*)
+perso_templates       — przepis personalizacji karty
+products              — fizyczny produkt w zamówieniu
+product_perso         — powiązanie produktu z przepisami perso (hasMany through)
+production_entries    — zdarzenia zejścia z produkcji fizycznej
+perso_entries         — zdarzenia zakończenia personalizacji partii
+shipments             — przesyłka (co, dokąd, jak)
+shipment_items        — pozycje przesyłki (hasMany through)
+shipment_packages     — informacja o pakowaniu przesyłki
+package_types         — słownik rozmiarów paczek
+couriers              — słownik firm kurierskich
+customer_addresses    — książka adresowa klientów (zastępuje addresses dla nowych)
+```
+
+Stare tabele zmienione minimalnie:
+```
+orders  — dodane: type VARCHAR(20), parent_order_id (null)
+```
+
+Szczegółowy opis logiki i scenariuszy: `skp-architektura-bazy.md`
+
+### Relacje many-to-many w nowym kodzie
+
+`shipment_items` i `product_perso` to tabele z dodatkowymi polami (`quantity`),
+modelowane jako **hasMany through (The Join Model)** — nie przez HABTM.
+Nazwy tabel łamią konwencję CakePHP świadomie (czytelność > konwencja),
+obsługiwane przez `$useTable` w modelach.
+
 ---
 
 ## Użytkownicy systemu
@@ -231,8 +289,13 @@ src/lib/komponenty/
 ### Przesyłki
 - Produkty z zamówienia można rozbić na wiele przesyłek
 - Każda przesyłka: co + dokąd (adres) + ile
-- Adresy pochodzą z książki adresowej klienta
+- Adresy pochodzą z książki adresowej klienta (`customer_addresses`)
 - Nowy adres dodany przy zamówieniu trafia do książki adresowej klienta
+- Przesyłka nie jest bezpośrednio powiązana z zamówieniem — jest powiązana
+  z produktami (dzięki temu jedna przesyłka może zawierać produkty z różnych zamówień)
+- Typy przesyłek: kurier / magazyn / odbior / kurier_klienta
+- Zakładka "Przesyłki" jest zawsze dostępna — ostrzeżenie tylko gdy produkt
+  wymaga perso ale nie ma jeszcze zdefiniowanych przepisów perso
 
 ### Nawigacja w aplikacji
 - Nowe widoki SvelteKit żyją pod /app/ obok starego CakePHP
