@@ -1,0 +1,7 @@
+Plik
+
+project-instructions.md
+
+przechowuje instrukcje dla projektu SKP w claude.ai
+
+Dotyczy całego projektu SKP: frontend + backend
