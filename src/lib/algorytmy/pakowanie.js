@@ -89,11 +89,25 @@ export function obliczPakowanie(produkty, rozmiary) {
 
   if (lacznie <= minPaczek) {
     // Per produkt nie zwiększa liczby paczek — preferujemy (nie mieszamy).
-    return wynikPerProdukt;
+    return scalWpisy(wynikPerProdukt);
   }
 
   // Krok 1 wygrywa — zwracamy pakowanie całości.
-  return wynikCalosci;
+  return scalWpisy(wynikCalosci);  
+}
+
+// Scal wpisy tego samego rozmiaru.
+function scalWpisy(wynik) {
+  var mapa = {};
+  for (var i = 0; i < wynik.length; i++) {
+    var klucz = wynik[i].pojemnosc + '_' + wynik[i].niestandardowa;
+    if (mapa[klucz]) {
+      mapa[klucz].ilosc += wynik[i].ilosc;
+    } else {
+      mapa[klucz] = Object.assign({}, wynik[i]);
+    }
+  }
+  return Object.values(mapa);
 }
 
 // Domyślne rozmiary paczek — używane gdy API nie zwróci rozmiarów.

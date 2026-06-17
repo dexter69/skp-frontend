@@ -109,6 +109,8 @@
       adres: null,
       kurier: null,
       uwagi: "",
+      palety: false,
+      pakowanie: [],
       pozycje: dane()
         .produkty.filter(function (p) {
           return dostepne[p.id] > 0;
@@ -117,6 +119,7 @@
           return { produkt_id: p.id, ilosc: dostepne[p.id] };
         }),
     };
+    
     zaktualizuj({ przesylki: [...dane().przesylki, nowaPrzesylka] });
     aktywnaId = noweId;
     panelWidoczny = true;

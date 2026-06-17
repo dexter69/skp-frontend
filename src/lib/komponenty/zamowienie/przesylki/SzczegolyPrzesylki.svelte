@@ -89,7 +89,7 @@
           <IconArrowsMaximize size={16} stroke={1.5} />
         {/if}
       </button>
-      
+
       <button
         type="button"
         onclick={onUsun}
@@ -133,7 +133,15 @@
     {/if}
 
     {#if aktywnyTab === "szczegoly"}
-      <TabPakowanieUwagi {przesylka} {styleKolumn} {onZmiana} />
+      <!-- <TabPakowanieUwagi {przesylka} {styleKolumn} {onZmiana} /> -->
+      <TabPakowanieUwagi
+        {przesylka}
+        {styleKolumn}
+        {onZmiana}
+        iloscDoSpakowania={przesylka.pozycje.reduce(function (s, p) {
+          return s + p.ilosc;
+        }, 0)}
+      />
     {/if}
   </div>
 </div>
