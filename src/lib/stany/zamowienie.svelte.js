@@ -15,7 +15,7 @@ function dodajDniRobocze(dataStart, dni) {
       dodane++;
     }
   }
-  return wynik.toISOString().split('T')[0];
+  return wynik.toISOString().split("T")[0];
 }
 
 // Tworzy jedną domyślną przesyłkę z wszystkimi produktami w pełnych ilościach.
@@ -27,26 +27,29 @@ function tworzDomyslnaPrzesylke(produkty) {
     // Ujemne id = nowa przesyłka (nie zapisana w bazie).
     // Ten sam schemat co dla produktów — zastępowane przez API po zapisie.
     id: -1,
+
+    palety: false,
+    pakowanie: [], // tablica { pojemnosc, ilosc, niestandardowa } — wypełniana przez algorytm
     // Nazwa własna przesyłki — null = brak nazwy, wyświetlamy "Przesyłka N".
     // UI dla nazwy własnej: TODO na przyszłość.
     nazwa: null,
     // Typ dostawy — domyślnie 'kurier' (najczęstszy przypadek).
     // Możliwe wartości: 'kurier' | 'magazyn' | 'odbior_osobisty' | 'kurier_klienta'
-    typDostawy: 'kurier',
+    typDostawy: "kurier",
     // Adres dostawy — domyślny adres klienta ładowany przez SekcjaPrzesylki.
     // null do czasu załadowania książki adresowej klienta z API.
     adres: null,
     // Kurier — null gdy typ != 'kurier' lub nie wybrano jeszcze firmy.
     // Wartość z listy kurierów z API (np. 'ups', 'dhl').
     kurier: null,
-    uwagi: '',
+    uwagi: "",
     // Pakowanie: TODO
-    pozycje: produkty.map(function(p) {
+    pozycje: produkty.map(function (p) {
       return {
         produkt_id: p.id,
-        ilosc: p.ilosc  // domyślnie: cała ilość trafia do tej przesyłki
+        ilosc: p.ilosc, // domyślnie: cała ilość trafia do tej przesyłki
       };
-    })
+    }),
   };
 }
 
@@ -56,18 +59,18 @@ export function tworzStanZamowienia(dane = {}) {
   // Przykład: dane.id = 123 → zamowienie.id = 123
   //           dane.id = undefined → zamowienie.id = null
   let zamowienie = $state({
-    id: dane.id ?? null,                    // id zamówienia w bazie
-    numer: dane.numer ?? null,              // numer zamówienia (np. '256/26 MS') — null gdy szkic
-    klient: dane.klient ?? null,            // wybrany klient — null gdy nie wybrano
+    id: dane.id ?? null, // id zamówienia w bazie
+    numer: dane.numer ?? null, // numer zamówienia (np. '256/26 MS') — null gdy szkic
+    klient: dane.klient ?? null, // wybrany klient — null gdy nie wybrano
     // Domyślna data realizacji: dziś + 10 dni roboczych (bez weekendów).
     // Dla istniejącego zamówienia — data z bazy. Dla nowego — obliczona automatycznie.
     dataRealizacji: dane.dataRealizacji ?? dodajDniRobocze(new Date(), 10),
-    ekspresowe: dane.ekspresowe ?? false,   // czy zamówienie ekspresowe
-    typKlienta: dane.typKlienta ?? null,    // 'nowy' lub 'stały' — null gdy nie wybrano
-    platnosci: dane.platnosci ?? {},        // szczegóły płatności (do rozwinięcia)
-    daneDoFaktury: dane.daneDoFaktury ?? '',
-    uwagi: dane.uwagi ?? '',
-    produkty: dane.produkty ?? [],          // lista produktów w zamówieniu
+    ekspresowe: dane.ekspresowe ?? false, // czy zamówienie ekspresowe
+    typKlienta: dane.typKlienta ?? null, // 'nowy' lub 'stały' — null gdy nie wybrano
+    platnosci: dane.platnosci ?? {}, // szczegóły płatności (do rozwinięcia)
+    daneDoFaktury: dane.daneDoFaktury ?? "",
+    uwagi: dane.uwagi ?? "",
+    produkty: dane.produkty ?? [], // lista produktów w zamówieniu
     // Lista przesyłek. Pusta przy starcie — inicjalizowana przy pierwszym wejściu
     // do sekcji Przesyłki (w wybierzSekcje w [id]/+layout.svelte).
     przesylki: dane.przesylki ?? [],
