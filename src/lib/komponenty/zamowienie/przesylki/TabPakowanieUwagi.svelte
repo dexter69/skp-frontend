@@ -4,9 +4,11 @@
   // Prawa kolumna: uwagi — zawsze widoczna niezależnie od trybu.
   // Czysty komponent — dane przez propsy, zmiany przez callbacki.
 
+  import { IconTrash } from "@tabler/icons-svelte-runes";
   import Toggle from "$lib/komponenty/Toggle.svelte";
   import {
     obliczPakowanie,
+    pakujNieMieszaj,
     DOMYSLNE_ROZMIARY,
   } from "$lib/algorytmy/pakowanie.js";
 
@@ -49,23 +51,47 @@
   const iloscSpakowana = $derived(
     przesylka.pakowanie.reduce(function (s, p) {
       return s + p.pojemnosc * p.ilosc;
-    }, 0),
+    }, 0) + (parseInt(nowaPojemnosc, 10) || 0),
   );
 
   // Czy wszystko spakowane?
   const czyKomplet = $derived(iloscSpakowana === iloscDoSpakowania);
 
+  const NOTATKA_NIE_MIESZAJ = "Nie mieszać różnych produktów w jednej paczce.";
+
   // Przelicz — uruchamia algorytm i zapisuje wynik przez callback.
   function przelicz() {
-    const wynik = obliczPakowanie(
-      przesylka.pozycje.filter(function (p) {
-        return p.ilosc > 0;
-      }),
-      rozmiary,
-    );
-    onZmiana({ pakowanie: wynik });
+    const pozycje = przesylka.pozycje.filter(function (p) {
+      return p.ilosc > 0;
+    });
+    const wynik = obliczPakowanie(pozycje, rozmiary);
+    const uwagi = przesylka.uwagi
+      .split("\n")
+      .filter(function (l) {
+        return l.trim() !== NOTATKA_NIE_MIESZAJ;
+      })
+      .join("\n")
+      .trim();
+    onZmiana({ pakowanie: wynik, uwagi });
   }
-  
+
+  function przeliczNieMieszaj() {
+    const pozycje = przesylka.pozycje.filter(function (p) {
+      return p.ilosc > 0;
+    });
+    const wynik = pakujNieMieszaj(pozycje, rozmiary);
+    const beZNotatki = przesylka.uwagi
+      .split("\n")
+      .filter(function (l) {
+        return l.trim() !== NOTATKA_NIE_MIESZAJ;
+      })
+      .join("\n")
+      .trim();
+    const uwagi = beZNotatki
+      ? NOTATKA_NIE_MIESZAJ + "\n" + beZNotatki
+      : NOTATKA_NIE_MIESZAJ;
+    onZmiana({ pakowanie: wynik, uwagi });
+  }
 
   // Aktualizuje ilość paczki standardowej danego rozmiaru.
   function zmienIloscStandardowej(pojemnosc, nowaIlosc) {
@@ -113,6 +139,18 @@
     onZmiana({ pakowanie: [...przesylka.pakowanie, nowa] });
   }
 
+  // Usuń niestandardowa paczkę
+  function usunNiestandardowa(indeks) {
+    const std = przesylka.pakowanie.filter(function (p) {
+      return !p.niestandardowa;
+    });
+    const niestd = przesylka.pakowanie.filter(function (p) {
+      return p.niestandardowa;
+    });
+    niestd.splice(indeks, 1);
+    onZmiana({ pakowanie: [...std, ...niestd] });
+  }
+
   // Stan lokalny pustego wiersza niestandardowego.
   let nowaPojemnosc = $state("");
 </script>
@@ -123,137 +161,163 @@
     class="flex flex-col border-r border-gray-200 px-4 py-2 gap-2 overflow-y-auto"
     style="width: var(--col-lewa)"
   >
-    <!-- Nagłówek: tytuł + przycisk Przelicz + toggle Palety -->
-    <div class="flex items-center gap-3">
-      <p
-        class="text-xs font-semibold uppercase tracking-wide text-text-secondary"
-      >
-        Pakowanie
-      </p>
-      {#if !czyPalety}
-        <button
-          type="button"
-          onclick={przelicz}
-          class="ml-6 text-xs text-accent hover:text-accent-hover transition-colors"
-        >
-          Przelicz
-        </button>
-      {/if}
-      <div class="flex-1"></div>
-      <Toggle
-        etykieta="Palety"
-        wartosc={czyPalety}
-        onZmiana={(v) => onZmiana({ palety: v })}
-      />
-    </div>
-
     {#if czyPalety}
-      <p class="text-sm text-text-muted italic">
-        Przesyłka na palecie — szczegóły w polu uwag.
-      </p>
+      <!-- Tryb palet — kontrolki + info -->
+      <div class="flex flex-col gap-3">
+        <Toggle
+          etykieta="Palety"
+          wartosc={czyPalety}
+          onZmiana={(v) => onZmiana({ palety: v })}
+        />
+        <p class="text-sm text-text-muted italic">
+          Przesyłka na palecie — szczegóły w polu uwag.
+        </p>
+      </div>
     {:else}
-      <!-- Tabela paczek -->
-      <div class="flex flex-col gap-1">
-        <!-- Wiersze standardowe -->
-        {#each wierszStandardowe as wiersz}
-          <div class="flex items-center gap-2">
-            <span class="flex-1 text-sm text-text-secondary">
-              {wiersz.pojemnosc.toLocaleString("pl-PL")} szt.
-            </span>
-            <input
-              type="text"
-              value={wiersz.ilosc === 0 ? "" : wiersz.ilosc}
-              placeholder="0"
-              onfocus={(e) => e.target.select()}
-              oninput={(e) => {
-                const ilosc = parseInt(e.target.value, 10) || 0;
-                zmienIloscStandardowej(wiersz.pojemnosc, ilosc);
-              }}
-              onblur={(e) =>
-                zmienIloscStandardowej(wiersz.pojemnosc, e.target.value || 0)}
-              class="w-14 rounded border border-transparent bg-transparent
-                     px-1.5 py-0.5 text-right text-sm text-text-primary
-                     placeholder:text-text-muted
-                     focus:border-border-focus focus:bg-input-bg focus:outline-none"
-            />
-            <span class="text-xs text-text-muted w-6">szt.</span>
-          </div>
-        {/each}
-
-        <!-- Separator przed niestandardowymi (tylko gdy są) -->
-        {#if wierszNiestandardowe.length > 0}
-          <div class="border-t border-border-default my-1"></div>
-        {/if}
-
-        <!-- Wiersze niestandardowe -->
-        {#each wierszNiestandardowe as wiersz, i}
-          <div class="flex items-center gap-2">
-            <span class="flex-1 text-sm text-warning-text">
-              {wiersz.pojemnosc.toLocaleString("pl-PL")} szt.
-            </span>
-            <input
-              type="text"
-              value={wiersz.ilosc}
-              onfocus={(e) => e.target.select()}
-              oninput={(e) => {
-                const ilosc = parseInt(e.target.value, 10) || 0;
-                zmienIloscStandardowej(wiersz.pojemnosc, ilosc);
-              }}
-              onblur={(e) => zmienIloscNiestandardowej(i, e.target.value)}
-              class="w-14 rounded border border-transparent bg-transparent
-                     px-1.5 py-0.5 text-right text-sm text-warning-text
-                     focus:border-border-focus focus:bg-input-bg focus:outline-none"
-            />
-            <span class="text-xs text-warning-text w-6">szt.</span>
-          </div>
-        {/each}
-
-        <!-- Pusty wiersz do dodania niestandardowej — gdy coś niespakowane -->
-        {#if iloscSpakowana < iloscDoSpakowania}
-          <div class="flex items-center gap-2 mt-1">
-            <input
-              type="text"
-              bind:value={nowaPojemnosc}
-              placeholder="pojemność..."
-              onkeydown={(e) => {
-                if (e.key === "Enter") {
-                  dodajNiestandardowa(parseInt(nowaPojemnosc, 10));
-                  nowaPojemnosc = "";
-                }
-              }}
-              onblur={() => {
-                if (nowaPojemnosc) {
-                  dodajNiestandardowa(parseInt(nowaPojemnosc, 10));
-                  nowaPojemnosc = "";
-                }
-              }}
-              class="flex-1 rounded border border-dashed border-border-default bg-transparent
-                     px-1.5 py-0.5 text-sm text-text-muted placeholder:text-text-muted
-                     focus:border-border-focus focus:bg-input-bg focus:outline-none"
-            />
-            <span class="text-xs text-text-muted w-6">szt.</span>
-          </div>
-        {/if}
-
-        <!-- Suma -->
+      <!-- Tryb paczek — dwie kolumny: kontrolki | tabela -->
+      <div class="flex gap-4 h-full min-h-0">
+        <!-- Lewa: kontrolki -->
         <div
-          class="flex items-center gap-2 mt-2 pt-2 border-t border-border-default"
+          class="flex flex-col gap-3 shrink-0 pt-1 pr-4 border-r border-border-default"
         >
-          <span class="flex-1 text-xs font-medium text-text-secondary"
-            >Razem</span
+          <Toggle
+            etykieta="Palety"
+            wartosc={czyPalety}
+            onZmiana={(v) => onZmiana({ palety: v })}
+          />
+          <button
+            type="button"
+            onclick={przelicz}
+            class="text-xs text-accent hover:text-accent-hover transition-colors text-left"
           >
-          <span
-            class="text-sm font-semibold {czyKomplet
-              ? 'text-success-text'
-              : 'text-warning-text'}"
+            Przelicz
+          </button>
+          <button
+            type="button"
+            onclick={przeliczNieMieszaj}
+            class="text-xs text-accent hover:text-accent-hover transition-colors text-left"
           >
-            {iloscSpakowana.toLocaleString("pl-PL")} / {iloscDoSpakowania.toLocaleString(
-              "pl-PL",
-            )}
-          </span>
-          {#if czyKomplet}
-            <span class="text-success-text text-xs">✓</span>
+            Nie mieszaj
+          </button>
+        </div>
+
+        <!-- Prawa: tabela paczek -->
+        <div class="flex flex-col gap-1 flex-1 min-w-0 overflow-y-auto">
+          <!-- Wiersze standardowe -->
+          {#each wierszStandardowe as wiersz}
+            <div class="flex items-center gap-2">
+              <span class="flex-1 text-sm text-text-secondary">
+                {wiersz.pojemnosc.toLocaleString("pl-PL")} szt.
+              </span>
+              <input
+                type="text"
+                value={wiersz.ilosc === 0 ? "" : wiersz.ilosc}
+                placeholder="0"
+                onfocus={(e) => e.target.select()}
+                oninput={(e) => {
+                  const ilosc = parseInt(e.target.value, 10) || 0;
+                  zmienIloscStandardowej(wiersz.pojemnosc, ilosc);
+                }}
+                onblur={(e) =>
+                  zmienIloscStandardowej(wiersz.pojemnosc, e.target.value || 0)}
+                class="w-14 rounded border border-transparent bg-transparent
+                       px-1.5 py-0.5 text-right text-sm text-text-primary
+                       placeholder:text-text-muted
+                       focus:border-border-focus focus:bg-input-bg focus:outline-none"
+              />
+              <span class="text-xs text-text-muted w-6">szt.</span>
+            </div>
+          {/each}
+
+          <!-- Separator przed niestandardowymi (tylko gdy są) -->
+          {#if wierszNiestandardowe.length > 0}
+            <div class="border-t border-border-default my-1"></div>
           {/if}
+
+          <!-- Wiersze niestandardowe -->
+          {#each wierszNiestandardowe as wiersz, i}
+            <div class="flex items-center gap-2">
+              <span class="flex-1 text-sm text-warning-text">
+                {wiersz.pojemnosc.toLocaleString("pl-PL")} szt.
+              </span>
+              <input
+                type="text"
+                value={wiersz.ilosc}
+                onfocus={(e) => e.target.select()}
+                oninput={(e) =>
+                  zmienIloscNiestandardowej(
+                    i,
+                    parseInt(e.target.value, 10) || 0,
+                  )}
+                onblur={(e) => zmienIloscNiestandardowej(i, e.target.value)}
+                class="w-14 rounded border border-transparent bg-transparent
+                       px-1.5 py-0.5 text-right text-sm text-warning-text
+                       focus:border-border-focus focus:bg-input-bg focus:outline-none"
+              />
+              <span class="text-xs text-warning-text w-6">szt.</span>
+              <button
+                type="button"
+                tabindex="-1"
+                onclick={() => usunNiestandardowa(i)}
+                class="shrink-0 rounded p-0.5 text-text-muted hover:text-error-text transition-colors"
+              >
+                <IconTrash size={14} stroke={1.5} />
+              </button>
+            </div>
+          {/each}
+
+          <!-- Pusty wiersz do dodania niestandardowej -->
+          {#if iloscSpakowana < iloscDoSpakowania}
+            <div class="flex items-center gap-2 mt-1">
+              <input
+                type="text"
+                bind:value={nowaPojemnosc}
+                placeholder="pojemność..."
+                onkeydown={(e) => {
+                  if (e.key === "Enter") {
+                    dodajNiestandardowa(parseInt(nowaPojemnosc, 10));
+                    nowaPojemnosc = "";
+                  }
+                }}
+                onblur={() => {
+                  if (nowaPojemnosc) {
+                    dodajNiestandardowa(parseInt(nowaPojemnosc, 10));
+                    nowaPojemnosc = "";
+                  }
+                }}
+                class="flex-1 rounded border border-dashed border-border-default bg-transparent
+                       px-1.5 py-0.5 text-sm text-text-muted placeholder:text-text-muted
+                       focus:border-border-focus focus:bg-input-bg focus:outline-none"
+              />
+              <span class="text-xs text-text-muted w-6">szt.</span>
+            </div>
+          {/if}
+
+          <!-- Suma -->
+          <div
+            class="flex items-center gap-2 mt-2 pt-2 border-t border-border-default"
+          >
+            <span class="flex-1 text-xs font-medium text-text-secondary"
+              >Razem</span
+            >
+            <span
+              class="text-sm font-semibold {czyKomplet
+                ? 'text-success-text'
+                : 'text-warning-text'}"
+            >
+              {iloscSpakowana.toLocaleString("pl-PL")} / {iloscDoSpakowania.toLocaleString(
+                "pl-PL",
+              )}
+            </span>
+            {#if czyKomplet}
+              <span class="text-success-text text-xs">✓</span>
+            {:else}
+              {@const roznica = iloscSpakowana - iloscDoSpakowania}
+              <span class="text-xs text-warning-text">
+                ({roznica > 0 ? "+" : ""}{roznica.toLocaleString("pl-PL")})
+              </span>
+            {/if}
+          </div>
         </div>
       </div>
     {/if}

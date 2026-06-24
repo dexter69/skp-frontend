@@ -11,7 +11,9 @@ function pakujIlosc(ilosc, rozmiary) {
   if (ilosc <= 0) return [];
 
   // Rozmiary posortowane malejąco.
-  const posortowane = rozmiary.slice().sort(function(a, b) { return b - a; });
+  const posortowane = rozmiary.slice().sort(function (a, b) {
+    return b - a;
+  });
 
   // Algorytm zachłanny — baseline.
   function zachlannie(ile) {
@@ -33,7 +35,9 @@ function pakujIlosc(ilosc, rozmiary) {
 
   // Liczy łączną liczbę paczek w wyniku.
   function liczPaczki(wynik) {
-    return wynik.reduce(function(s, p) { return s + p.ilosc; }, 0);
+    return wynik.reduce(function (s, p) {
+      return s + p.ilosc;
+    }, 0);
   }
 
   var baseline = zachlannie(ilosc);
@@ -61,14 +65,18 @@ function pakujIlosc(ilosc, rozmiary) {
 // rozmiary: tablica liczb, np. [5000, 3000, 2000, 1000]
 // Zwraca tablicę { pojemnosc, ilosc, niestandardowa, produkt_id? }
 export function obliczPakowanie(produkty, rozmiary) {
-  var suma = produkty.reduce(function(s, p) { return s + p.ilosc; }, 0);
+  var suma = produkty.reduce(function (s, p) {
+    return s + p.ilosc;
+  }, 0);
   if (suma <= 0) return [];
 
   // Krok 1: pakowanie całej sumy — daje minimalną liczbę paczek.
   var wynikCalosci = pakujIlosc(suma, rozmiary);
 
   function liczPaczki(wynik) {
-    return wynik.reduce(function(s, p) { return s + p.ilosc; }, 0);
+    return wynik.reduce(function (s, p) {
+      return s + p.ilosc;
+    }, 0);
   }
 
   var minPaczek = liczPaczki(wynikCalosci);
@@ -93,14 +101,14 @@ export function obliczPakowanie(produkty, rozmiary) {
   }
 
   // Krok 1 wygrywa — zwracamy pakowanie całości.
-  return scalWpisy(wynikCalosci);  
+  return scalWpisy(wynikCalosci);
 }
 
 // Scal wpisy tego samego rozmiaru.
 function scalWpisy(wynik) {
   var mapa = {};
   for (var i = 0; i < wynik.length; i++) {
-    var klucz = wynik[i].pojemnosc + '_' + wynik[i].niestandardowa;
+    var klucz = wynik[i].pojemnosc + "_" + wynik[i].niestandardowa;
     if (mapa[klucz]) {
       mapa[klucz].ilosc += wynik[i].ilosc;
     } else {
@@ -108,6 +116,60 @@ function scalWpisy(wynik) {
     }
   }
   return Object.values(mapa);
+}
+
+function pakujIloscNieMieszaj(ilosc, rozmiary) {
+  if (ilosc <= 0) return [];
+
+  const posortowane = rozmiary.slice().sort(function (a, b) {
+    return b - a;
+  });
+  const maxRozmiar = posortowane[0];
+
+  function zachlannie(ile) {
+    var wynik = [];
+    var pozostalo = ile;
+    for (var i = 0; i < posortowane.length; i++) {
+      var r = posortowane[i];
+      if (r <= pozostalo) {
+        var n = Math.floor(pozostalo / r);
+        wynik.push({ pojemnosc: r, ilosc: n, niestandardowa: false });
+        pozostalo -= n * r;
+      }
+    }
+    if (pozostalo > 0) {
+      wynik.push({ pojemnosc: pozostalo, ilosc: 1, niestandardowa: true });
+    }
+    return wynik;
+  }
+
+  function liczPaczki(wynik) {
+    return wynik.reduce(function (s, p) {
+      return s + p.ilosc;
+    }, 0);
+  }
+
+  var baseline = zachlannie(ilosc);
+  var minPaczek = liczPaczki(baseline);
+
+  // Jedna niestandardowa paczka — tylko gdy mieści się w maksymalnym rozmiarze
+  // i daje mniej paczek niż baseline.
+  if (ilosc <= maxRozmiar && minPaczek > 1) {
+    return [{ pojemnosc: ilosc, ilosc: 1, niestandardowa: true }];
+  }
+
+  return baseline;
+}
+
+export function pakujNieMieszaj(produkty, rozmiary) {
+  var wynik = [];
+  for (var i = 0; i < produkty.length; i++) {
+    var czesciowe = pakujIloscNieMieszaj(produkty[i].ilosc, rozmiary);
+    for (var j = 0; j < czesciowe.length; j++) {
+      wynik.push(czesciowe[j]);
+    }
+  }
+  return scalWpisy(wynik);
 }
 
 // Domyślne rozmiary paczek — używane gdy API nie zwróci rozmiarów.
