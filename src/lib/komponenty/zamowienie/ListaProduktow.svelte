@@ -5,6 +5,7 @@
   Edycja inline przez WierszProduktu.svelte.
 -->
 <script>
+  import Przycisk from '$lib/komponenty/Przycisk.svelte';
   import WierszProduktu from "$lib/komponenty/zamowienie/WierszProduktu.svelte";
 
   // produkty — aktualna lista produktów z stanu zamówienia
@@ -64,14 +65,8 @@
       onkeydown={handleKeydown}
       placeholder="Nazwa produktu..."
       class="flex-1 rounded-md bg-input-bg px-3 py-1.5 text-sm text-input-text outline-1 -outline-offset-1 outline-input-border focus:outline-2 focus:-outline-offset-2 focus:outline-border-focus"
-    />
-    <button
-      type="button"
-      onclick={dodajProdukt}
-      class="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-text-on-dark hover:bg-accent-hover transition-colors"
-    >
-      Dodaj
-    </button>
+    />    
+    <Przycisk onclick={dodajProdukt}>Dodaj</Przycisk>
   </div>
 
   <!-- Tabela produktów.

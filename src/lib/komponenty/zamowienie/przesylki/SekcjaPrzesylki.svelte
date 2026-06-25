@@ -1,5 +1,6 @@
 <script>
   import { getContext } from "svelte";
+  import Przycisk from '$lib/komponenty/Przycisk.svelte';
   import TabelaPrzesylek from "./TabelaPrzesylek.svelte";
   import SzczegolyPrzesylki from "./SzczegolyPrzesylki.svelte";
   import WyborAdresu from "./WyborAdresu.svelte";
@@ -229,17 +230,7 @@
       Rozdysponuj produkty zamówienia między przesyłki.
     </p>
   </div>
-  <button
-    type="button"
-    onclick={dodajPrzesylke}
-    disabled={!moznaUtworzycPrzesylke()}
-    class="block rounded-md bg-accent px-3 py-2 text-center text-sm font-semibold
-           text-text-on-dark shadow-xs
-           hover:enabled:bg-accent-hover
-           disabled:cursor-not-allowed disabled:opacity-40"
-  >
-    + Dodaj przesyłkę
-  </button>
+  <Przycisk onclick={dodajPrzesylke} disabled={!moznaUtworzycPrzesylke()} rozmiar="lg">+ Dodaj przesyłkę</Przycisk>
 </div>
 
 <!-- A: kontener główny — punkt odniesienia dla absolutnie pozycjonowanego panelu C. -->

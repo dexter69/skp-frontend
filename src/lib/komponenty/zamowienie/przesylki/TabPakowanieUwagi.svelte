@@ -5,6 +5,7 @@
   // Czysty komponent — dane przez propsy, zmiany przez callbacki.
 
   import { IconTrash } from "@tabler/icons-svelte-runes";
+  import Przycisk from '$lib/komponenty/Przycisk.svelte';
   import Toggle from "$lib/komponenty/Toggle.svelte";
   import {
     obliczPakowanie,
@@ -184,21 +185,9 @@
             etykieta="Palety"
             wartosc={czyPalety}
             onZmiana={(v) => onZmiana({ palety: v })}
-          />
-          <button
-            type="button"
-            onclick={przelicz}
-            class="text-xs text-accent hover:text-accent-hover transition-colors text-left"
-          >
-            Przelicz
-          </button>
-          <button
-            type="button"
-            onclick={przeliczNieMieszaj}
-            class="text-xs text-accent hover:text-accent-hover transition-colors text-left"
-          >
-            Nie mieszaj
-          </button>
+          />          
+          <Przycisk wariant="secondary" rozmiar="sm" onclick={przelicz}>Przelicz</Przycisk>
+          <Przycisk wariant="secondary" rozmiar="sm" onclick={przeliczNieMieszaj}>Nie mieszaj</Przycisk>          
         </div>
 
         <!-- Prawa: tabela paczek -->

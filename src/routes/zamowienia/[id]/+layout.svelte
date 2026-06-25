@@ -1,5 +1,6 @@
 <script>
   import { getContext, onDestroy, setContext } from "svelte";
+  import Przycisk from '$lib/komponenty/Przycisk.svelte';
   import {
     tworzStanZamowienia,
     tworzDomyslnaPrzesylke,
@@ -93,12 +94,8 @@
     {/each}
   </ul>
 
-  <div class="mt-4">
-    <button
-      class="w-full rounded-md bg-accent px-3 py-2 text-sm font-semibold text-text-on-dark hover:bg-accent-hover transition-colors"
-    >
-      Zapisz zamówienie
-    </button>
+  <div class="mt-4">       
+    <Przycisk rozmiar="lg" klasa="w-full">Zapisz zamówienie</Przycisk>
   </div>
 {/snippet}
 
