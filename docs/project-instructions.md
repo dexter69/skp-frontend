@@ -94,7 +94,7 @@ Stosujemy ręczne skrypty SQL przechowywane w `inne/migracje/` z nazwą
 zawierającą nr (kolejność skryptów) i opis, np. `001_nowe_tabele_produkty_przesylki.sql`.
 NIE używamy CakePHP Migrations plugin.
 
-### Nowe tabele (zaprojektowane, jeszcze nie utworzone)
+### Nowe tabele - utworzone (migracja 002_skp_migracja.sql)
 
 ```
 card_templates        — przepis produkcji fizycznej karty (spec. a_*, r_*)
@@ -168,6 +168,10 @@ obsługiwane przez `$useTable` w modelach.
   dla pracowników biurowych
 - Zawsze zwracaj uwagę gdy proponowane rozwiązanie jest hackiem
 - Zmiany wprowadzamy krokami: jeden krok → sprawdzamy → następny
+- W JavaScript zawsze używaj let/const, nigdy var
+- Dane mockowe centralizowane w `src/lib/api/mockDane.js`
+- Algorytmy biznesowe w `src/lib/algorytmy/`
+- Procedura squash commitów przed push: `inne/git-squash-i-push.md`
 
 ---
 
@@ -261,6 +265,8 @@ obsługiwane przez `$useTable` w modelach.
 ### Komponenty
 
 src/lib/komponenty/
+  Przycisk.svelte             — uniwersalny przycisk; warianty: primary/secondary/danger;
+                                rozmiary: sm/md/lg; prop klasa dla dodatkowych klas CSS
   Toggle.svelte               — uniwersalny toggle, prop kolorAktywny (CSS var)
   WyborOpcji.svelte           — uniwersalny wybór opcji (radio buttons)
   zamowienie/
@@ -269,15 +275,33 @@ src/lib/komponenty/
                                 typ klienta (nowy/stały) w prawym dolnym rogu
                                 przez WyborOpcji (absolutnie pozycjonowany)
     WyborKlienta.svelte       — Command Palette wyszukiwania klienta (mock→API)
+    WyborAdresu.svelte        — modal wyboru adresu dostawy z książki adresowej;
+                                lista od razu widoczna, filtry typów jako pill-buttony,
+                                typy generowane dynamicznie z dostępnych typów adresu
     MetadaneZamowienia.svelte — data realizacji, ekspresowe (toggle)
     Platnosci.svelte          — logika płatności (przedpłata + płatność po)
     NotatkaZamowienia.svelte  — taby: "Dane do faktury" / "Uwagi";
-                                textarea z auto-resize (rośnie z treścią)
+                                textarea wypełnia dostępną przestrzeń, scrolluje
     ListaProduktow.svelte     — lista produktów z dodawaniem (Enter lub przycisk)
                                 i usuwaniem; zarządza lokalną kopią listy
     WierszProduktu.svelte     — jeden wiersz tabeli: nazwa, ilość, cena, kosz;
                                 edycja inline, konwersja ceny, walidacja ilości;
+                                Tab z ilości→cena→ilość następnego wiersza (Enter też);
                                 czysty komponent (tylko callbacki)
+    przesylki/
+      SekcjaPrzesylki.svelte  — główny komponent sekcji przesyłek; zarządza listą
+                                przesyłek, aktywną przesyłką, panelem szczegółów
+      TabelaPrzesylek.svelte  — tabela krzyżowa produkty×przesyłki; edycja inline;
+                                sticky nagłówki z tłem (bg-gray-50)
+      SzczegolyPrzesylki.svelte — panel szczegółów przesyłki; absolutnie pozycjonowany;
+                                dwa stany wysokości (--szczegoly-przesylki-h / -duze);
+                                ResizeObserver do obliczania pozycji
+      TabDostawa.svelte       — tab dostawy: typ, kurier, adres, lista "Co jedzie";
+                                kosz przy produkcie usuwa pozycję lub całą przesyłkę
+                                gdy ostatni produkt w jedynej przesyłce
+      TabPakowanieUwagi.svelte — tab pakowania: dwie kolumny (kontrolki | tabela paczek);
+                                tryb paczek i tryb palet (toggle); przyciski Przelicz
+                                i Nie mieszaj; suma na żywo z informacją o różnicy
 
 ### Wybór klienta
 - Command Palette (modal) otwierany kliknięciem w kartę klienta
@@ -296,6 +320,22 @@ src/lib/komponenty/
 - Typy przesyłek: kurier / magazyn / odbior / kurier_klienta
 - Zakładka "Przesyłki" jest zawsze dostępna — ostrzeżenie tylko gdy produkt
   wymaga perso ale nie ma jeszcze zdefiniowanych przepisów perso
+
+### Pakowanie przesyłek
+
+- Algorytmy w `src/lib/algorytmy/pakowanie.js`
+- `obliczPakowanie(produkty, rozmiary)` — przycisk "Przelicz":
+  krok 1: pakuje całą sumę zachłannie (minimalna liczba paczek);
+  krok 2: pakuje per produkt — jeśli nie zwiększa liczby paczek, preferuje
+  (nie miesza produktów); preferuje równe paczki gdy nie zwiększa ich liczby
+- `pakujNieMieszaj(produkty, rozmiary)` — przycisk "Nie mieszaj":
+  pakuje każdy produkt osobno; jeśli produkt ≤ największy rozmiar standardowy
+  i baseline > 1 paczka — używa jednej niestandardowej paczki
+- Rozmiary standardowych paczek docelowo z API; na razie `DOMYSLNE_ROZMIARY = [5000, 3000, 2000, 1000]`
+- Paczka niestandardowa nigdy nie może być większa niż największy rozmiar standardowy
+- "Nie mieszaj" wpisuje notatkę do uwag przesyłki (prepend); "Przelicz" usuwa tę notatkę
+- Struktura przesyłki w stanie: `{ id, nazwa, typDostawy, adres, kurier, uwagi, palety, pakowanie, pozycje }`
+  gdzie `pakowanie: [{ pojemnosc, ilosc, niestandardowa }]`
 
 ### Nawigacja w aplikacji
 - Nowe widoki SvelteKit żyją pod /app/ obok starego CakePHP
