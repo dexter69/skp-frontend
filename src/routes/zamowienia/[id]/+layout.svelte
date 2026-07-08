@@ -1,6 +1,6 @@
 <script>
   import { getContext, onDestroy, setContext } from "svelte";
-  import Przycisk from '$lib/komponenty/Przycisk.svelte';
+  import Przycisk from "$lib/komponenty/Przycisk.svelte";
   import {
     tworzStanZamowienia,
     tworzDomyslnaPrzesylke,
@@ -32,14 +32,14 @@
       zamowienie.przesylki.length === 0 &&
       zamowienie.produkty.length > 0
     ) {
-      const domyslnyAdres = zamowienie.klient
-        ? zamowienie.klient.adresy.find(function (a) {
-            return a.typ === "domyslny";
-          }) || zamowienie.klient.adresy[0]
-        : null;
-      const przesylka = tworzDomyslnaPrzesylke(zamowienie.produkty);
-      przesylka.adres = domyslnyAdres;
-      zamowienie.przesylki = [przesylka];
+        const domyslnyAdres = zamowienie.klient
+          ? zamowienie.klient.adresy.find(function (a) {
+              return a.isDefault === true;
+            }) || zamowienie.klient.adresy[0]
+          : null;
+        const przesylka = tworzDomyslnaPrzesylke(zamowienie.produkty);
+        przesylka.adres = domyslnyAdres;
+        zamowienie.przesylki = [przesylka];
     }
 
     aktywnaSekcja = sekcja.id;
@@ -94,7 +94,7 @@
     {/each}
   </ul>
 
-  <div class="mt-4">       
+  <div class="mt-4">
     <Przycisk rozmiar="lg" klasa="w-full">Zapisz zamówienie</Przycisk>
   </div>
 {/snippet}
