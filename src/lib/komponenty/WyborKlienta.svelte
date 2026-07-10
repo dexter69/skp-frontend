@@ -1,37 +1,85 @@
 <script>
+  // WyborKlienta.svelte
+  // Command Palette wyszukiwania klienta.
   // onWybor — callback wywoływany gdy użytkownik wybierze klienta z listy.
   // otwarty — stan otwarcia modala, $bindable żeby rodzic (KartaKlienta)
   // mógł go otworzyć przez bind:otwarty={modalOtwarty}
-  let { onWybor, otwarty = $bindable(false) } = $props();
+  import { BACKEND_URL } from "$lib/config.js";
 
-  // Dane klientów z centralnego mocka — spójne z resztą aplikacji.
-  // TODO: zastąpić fetch do API CakePHP.
-  // Endpoint: GET /api/klienci/szukaj?fraza=... → lista klientów
-  import { MOCK_KLIENCI } from '$lib/api/mockDane.js';
+  let { onWybor, otwarty = $bindable(false) } = $props();
 
   // Fraza wpisana przez użytkownika w pole wyszukiwania.
   // Czyszczona przy zamknięciu modala.
   let fraza = $state("");
 
-  // Filtrowanie klientów na podstawie wpisanej frazy.
-  // Wymagane minimum 2 znaki — żeby nie pokazywać całej listy od razu.
-  // Filtruje po nazwie (case-insensitive).
-  // TODO: gdy podpięte API — tu będzie wywołanie fetch zamiast filtrowania lokalnego
-  const widoczniKlienci = $derived(
-    fraza.length < 2
-      ? []
-      : MOCK_KLIENCI.filter((k) =>
-          k.nazwa.toLowerCase().includes(fraza.toLowerCase()),
-        ),
-  );
+  // Lista klientów zwrócona przez API.
+  let klienci = $state([]);
+
+  // Czy trwa zapytanie do API.
+  let laduje = $state(false);
+
+  // Timer debounce — odkładamy zapytanie o 300ms po ostatnim naciśnięciu klawisza.
+  // Zapobiega wysyłaniu zapytania przy każdej literze.
+  let debounceTimer = null;
+
+  // Reagujemy na zmianę frazy — uruchamiamy debounce.
+  $effect(() => {
+    const aktualneFraza = fraza;
+
+    clearTimeout(debounceTimer);
+    klienci = [];
+
+    if (aktualneFraza.length < 2) {
+      laduje = false;
+      return;
+    }
+
+    laduje = true;
+    debounceTimer = setTimeout(() => {
+      szukaj(aktualneFraza);
+    }, 300);
+  });
+
+  // Wysyła zapytanie do API i aktualizuje listę klientów.
+  async function szukaj(fraza) {
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/api/klienci/szukaj?fraza=${encodeURIComponent(fraza)}`,
+        { credentials: "include" },
+      );
+      const data = await response.json();
+      if (data.success) {
+        klienci = data.data;
+      } else {
+        klienci = [];
+      }
+    } catch (e) {
+      klienci = [];
+    } finally {
+      laduje = false;
+    }
+  }
 
   function zamknij() {
     otwarty = false;
-    fraza = ""; // czyścimy frazę żeby następne otwarcie zaczęło od pustego pola
-  }
+    fraza = "";
+    klienci = [];
+    clearTimeout(debounceTimer);
+  }  
 
-  function wybierz(klient) {
-    onWybor?.(klient); // przekazujemy wybranego klienta do rodzica
+  async function wybierz(klient) {
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/api/klienci-adresy/${klient.id}`,
+        { credentials: "include" },
+      );
+      const data = await response.json();
+      const adresy = data.success ? data.data : [];
+      onWybor?.({ ...klient, adresy });
+    } catch (e) {
+      // Błąd sieci — przekazujemy klienta bez adresów, adresy można dobrać później
+      onWybor?.({ ...klient, adresy: [] });
+    }
     zamknij();
   }
 
@@ -53,9 +101,12 @@
   ></button>
 
   <!-- Kontener modala -->
-  <div class="fixed inset-y-0 right-0 z-50 overflow-y-auto p-20 pointer-events-none left-(--sidebar-width)">
-    <div class="mx-auto max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl outline-1 outline-black/5 pointer-events-auto">
-
+  <div
+    class="fixed inset-y-0 right-0 z-50 overflow-y-auto p-20 pointer-events-none left-(--sidebar-width)"
+  >
+    <div
+      class="mx-auto max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl outline-1 outline-black/5 pointer-events-auto"
+    >
       <!-- Pole wyszukiwania z ikoną lupy -->
       <div class="grid grid-cols-1 border-b border-border-default">
         <input
@@ -82,29 +133,30 @@
       <!-- Lista wyników wyszukiwania -->
       {#if fraza.length < 2}
         <p class="px-4 py-3 text-sm text-text-muted">Zacznij wpisywać...</p>
-      {:else if widoczniKlienci.length === 0}
+      {:else if laduje}
+        <p class="px-4 py-3 text-sm text-text-muted">Szukam...</p>
+      {:else if klienci.length === 0}
         <p class="px-4 py-3 text-sm text-text-muted">Brak wyników.</p>
       {:else}
-        <!-- Lista pasujących klientów.
-             TODO: gdy będzie API, dodać debounce żeby nie wysyłać
-             zapytania przy każdym naciśnięciu klawisza -->
         <ul class="max-h-72 overflow-y-auto py-2">
-          {#each widoczniKlienci as klient}
+          {#each klienci as klient}
             <li>
               <button
                 type="button"
                 onclick={() => wybierz(klient)}
                 class="w-full px-4 py-2.5 text-left hover:bg-bg-primary transition-colors"
               >
-                <span class="text-sm text-text-primary font-medium">{klient.nazwa}</span>
-                <span class="text-text-muted"> · </span>
-                <span class="text-sm text-text-secondary">{klient.miasto ?? ''}</span>
+                <p class="text-sm font-medium text-text-primary">
+                  {klient.nazwa}
+                </p>
+                <p class="text-xs text-text-secondary truncate">
+                  {klient.nazwaPelna ?? ""}
+                </p>
               </button>
             </li>
           {/each}
         </ul>
       {/if}
-
     </div>
   </div>
 {/if}

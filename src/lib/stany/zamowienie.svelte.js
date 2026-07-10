@@ -58,6 +58,7 @@ export function tworzStanZamowienia(dane = {}) {
   // w przeciwnym razie ustawia wartość domyślną.
   // Przykład: dane.id = 123 → zamowienie.id = 123
   //           dane.id = undefined → zamowienie.id = null
+  
   let zamowienie = $state({
     id: dane.id ?? null, // id zamówienia w bazie
     numer: dane.numer ?? null, // numer zamówienia (np. '256/26 MS') — null gdy szkic

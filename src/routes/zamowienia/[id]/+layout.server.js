@@ -11,7 +11,7 @@ export async function load({ params, cookies }) {
     const id = params.id;
 
     console.log('Cookie sesji:', sesja);
-    const response = await fetch(`http://skp2x.ddev.site/api/zamowienia/${id}`, {
+    const response = await fetch(`${BACKEND_URL}/api/zamowienia/${id}`, {
         method: 'GET',
         headers: {
             'Cookie': `CAKEPHP=${sesja}`
@@ -25,10 +25,9 @@ export async function load({ params, cookies }) {
     }
 
     if (data.data.uiVersion !== 2) {
-        // throw redirect(302, `https://skp2x.ddev.site/orders/edit/${id}`);
         throw redirect(302, `${BACKEND_URL}/orders/edit/${id}`);
     }
-
+    
     return {
         zamowienie: data.data
     };

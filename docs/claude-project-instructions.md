@@ -1,4 +1,4 @@
-## Projekt: SKP — System zarządzania zamówieniami (plastikowe karty)
+# Projekt: SKP — System zarządzania zamówieniami (plastikowe karty)
 
 Aplikacja biznesowa z 11-letnią historią. Prowadź rozmowy po polsku
 (angielski OK jeśli wygodniejszy w danym kontekście, np. nazwy
@@ -55,6 +55,15 @@ techniczne, fragmenty kodu).
 - Apache, wewnętrzna sieć LAN, pseudo-domena skp.lan (plik hosts)
 - Brak HTTPS (sieć wewnętrzna)
 - CakePHP na skp.lan, SvelteKit docelowo na skp.lan/app/
+- Apache ProxyPass: `/app/` → Node.js (localhost:3000), reszta → CakePHP
+
+**Zmienne środowiskowe (SvelteKit):**
+- `.env` w root skp-frontend (w .gitignore) — zmienne lokalne DEV
+- `.env.example` w repo — dokumentacja dostępnych zmiennych
+- `src/lib/config.js` — jedyne miejsce gdzie czytamy import.meta.env;
+  importuj BACKEND_URL z tego pliku wszędzie indziej
+- `VITE_BACKEND_URL` — na DEV: https://skp2x.ddev.site, na produkcji: puste
+  (obie aplikacje na tej samej domenie skp.lan)
 
 ---
 
@@ -81,20 +90,51 @@ w dowolnym momencie. Baza i stary kod muszą działać bez przerwy.
   — dzięki temu stary kod nadal widzi karty i działa bez zmian
 - Stary kod nie wie o istnieniu nowych tabel
 
+**Rozróżnienie zamówień stary/nowy UI:**
+- Pole `ui_version` w tabeli `orders` (TINYINT, DEFAULT 1)
+- `1` = zamówienie stworzone przez stary UI (legacy)
+- `2` = zamówienie stworzone przez nowy UI (Svelte)
+- Stary UI generuje link "Edytuj" warunkowo na podstawie `ui_version`
+- Nowy UI (`+layout.server.js`) przekierowuje zamówienia z `ui_version != 2`
+  do starego UI przez `throw redirect(302, \`${BACKEND_URL}/orders/edit/${id}\`)`
+- Użytkownik nigdy nie widzi błędu — zawsze trafia we właściwe miejsce
+
 **Konwencja nazewnictwa nowego kodu:**
 Nowe kontrolery i modele mają sufiks `Api` — łatwo je odróżnić od starych:
 ```
-OrdersApiController.php   → model: OrderApi      ($useTable = 'orders')
-CardsApiController.php    → model: CardApi        ($useTable = 'cards')
+OrdersApiController.php    → model: OrderApi      ($useTable = 'orders')
+CustomersApiController.php → model: CustomerApi   ($useTable = 'customers')
+CardsApiController.php     → model: CardApi        ($useTable = 'cards')
 ShipmentsApiController.php → model: ShipmentApi
 ```
+
+**Podział odpowiedzialności w nowym API (kontroler / serwis / model):**
+- **Model** (`*Api.php`) — zapytania do bazy: `find()`, custom SQL, wszystko
+  co dotyka bazy. Zwraca surowe dane bez formatowania dla Svelte.
+- **Serwis** (`*Service.php`) — logika biznesowa i formatowanie: wywołuje metody
+  modelu, składa wyniki z wielu modeli, konwertuje do struktury Svelte. Zero SQL.
+- **Kontroler** (`*ApiController.php`) — tylko HTTP: waliduje żądanie,
+  wywołuje serwis, zwraca odpowiedź przez `_respondSuccess()` / `_respondError()`.
+
+**Routing CakePHP — ważne zasady:**
+- Używamy wzorca `*` zamiast `:id` (CakePHP 2.4 nie obsługuje named params w API)
+- Id odczytujemy przez `$this->request->params['pass'][0]`
+- Bardziej szczegółowe reguły muszą być PRZED ogólnymi w routes.php
+- Wzorzec `*/coś` (dwa segmenty z gwiazdką) nie działa — używamy osobnych prefiksów,
+  np. `/api/klienci-adresy/*` zamiast `/api/klienci/*/adresy`
 
 **Zmiany w bazie danych:**
 Stosujemy ręczne skrypty SQL przechowywane w `inne/migracje/` z nazwą
 zawierającą nr (kolejność skryptów) i opis, np. `001_nowe_tabele_produkty_przesylki.sql`.
 NIE używamy CakePHP Migrations plugin.
 
-### Nowe tabele - utworzone (migracja 002_skp_migracja.sql)
+**Ważne: po dodaniu nowej kolumny w MySQL** wyczyść cache modeli CakePHP:
+```
+app/tmp/cache/models/*
+app/tmp/cache/persistent/*
+```
+
+### Nowe tabele — utworzone (migracja 002_skp_migracja.sql)
 
 ```
 card_templates        — przepis produkcji fizycznej karty (spec. a_*, r_*)
@@ -113,7 +153,7 @@ customer_addresses    — książka adresowa klientów (zastępuje addresses dla
 
 Stare tabele zmienione minimalnie:
 ```
-orders  — dodane: type VARCHAR(20), parent_order_id (null)
+orders  — dodane: type VARCHAR(20), parent_order_id (null), ui_version TINYINT
 ```
 
 Szczegółowy opis logiki i scenariuszy: `skp-architektura-bazy.md`
@@ -124,6 +164,33 @@ Szczegółowy opis logiki i scenariuszy: `skp-architektura-bazy.md`
 modelowane jako **hasMany through (The Join Model)** — nie przez HABTM.
 Nazwy tabel łamią konwencję CakePHP świadomie (czytelność > konwencja),
 obsługiwane przez `$useTable` w modelach.
+
+### Routing SvelteKit — aktualne widoki
+
+```
+/zamowienia/dodaj          → tworzy nowe zamówienie (POST do API), redirect do edycji
+/zamowienia/[id]/edycja    → widok edycji zamówienia (nowe i istniejące)
+```
+
+**Struktura plików dla widoku edycji:**
+```
+src/routes/zamowienia/
+  dodaj/
+    +page.server.js        — POST do API, redirect do /zamowienia/[id]/edycja
+  [id]/
+    +layout.server.js      — pobiera dane z API, sprawdza uiVersion, redirect legacy
+    +layout.svelte         — inicjalizuje stan zamówienia, sidebar z sekcjami
+    edycja/
+      +page.svelte         — widok edycji (sekcja 1: klient+produkty, sekcja 2: przesyłki)
+```
+
+**Ważne:** `+layout.server.js` musi być na poziomie `[id]/`, nie `[id]/edycja/` —
+inaczej `+layout.svelte` nie dostaje danych z API (`data.zamowienie` byłoby undefined).
+
+**CORS na DEV:** `AppApiController::beforeFilter()` ustawia nagłówki CORS dla
+`http://localhost:5173` — pozwala na fetch z przeglądarki. Na produkcji bez znaczenia
+(ta sama domena). Fetche server-side (w `+layout.server.js`) nie potrzebują CORS —
+idą bezpośrednio Node.js → CakePHP.
 
 ---
 
@@ -194,9 +261,9 @@ obsługiwane przez `$useTable` w modelach.
 - Sekcja 3: TBD (placeholder w sidebarze)
 
 ### Routing
-- `/app/zamowienia` — lista zamówień
-- `/app/zamowienia/[id]/edycja` — jedyny widok edycji (nowe i istniejące)
-- `/app/zamowienia/[id]` — podgląd (przyszłość)
+- `/zamowienia/dodaj` — tworzy nowy rekord w bazie, redirect do edycji
+- `/zamowienia/[id]/edycja` — jedyny widok edycji (nowe i istniejące)
+- `/zamowienia/[id]` — podgląd (przyszłość)
 - Nowe zamówienie: POST do backendu → tworzy pusty rekord → redirect do edycji
 
 ### Layout i sidebar
@@ -261,9 +328,12 @@ obsługiwane przez `$useTable` w modelach.
 - Tymczasowe id dla nowych rekordów: ujemne liczby całkowite
   (nie kolidują z id z bazy, zastępowane przez API po zapisie)
 - Zmiana klienta resetuje powiązane pola (np. typKlienta → null)
+- Logika wyboru klienta w nazwanej funkcji `handleWyborKlienta()` w `+page.svelte`
+  (nie jako anonymous function inline w atrybucie komponentu)
 
 ### Komponenty
 
+```
 src/lib/komponenty/
   Przycisk.svelte             — uniwersalny przycisk; warianty: primary/secondary/danger;
                                 rozmiary: sm/md/lg; prop klasa dla dodatkowych klas CSS
@@ -274,7 +344,9 @@ src/lib/komponenty/
                                 cały obszar klikalny (div z role="button");
                                 typ klienta (nowy/stały) w prawym dolnym rogu
                                 przez WyborOpcji (absolutnie pozycjonowany)
-    WyborKlienta.svelte       — Command Palette wyszukiwania klienta (mock→API)
+    WyborKlienta.svelte       — Command Palette wyszukiwania klienta; live search
+                                do API z debounce 300ms; po wyborze pobiera adresy
+                                klienta przez GET /api/klienci-adresy/:id
     WyborAdresu.svelte        — modal wyboru adresu dostawy z książki adresowej;
                                 lista od razu widoczna, filtry typów jako pill-buttony,
                                 typy generowane dynamicznie z dostępnych typów adresu
@@ -302,10 +374,12 @@ src/lib/komponenty/
       TabPakowanieUwagi.svelte — tab pakowania: dwie kolumny (kontrolki | tabela paczek);
                                 tryb paczek i tryb palet (toggle); przyciski Przelicz
                                 i Nie mieszaj; suma na żywo z informacją o różnicy
+```
 
 ### Wybór klienta
 - Command Palette (modal) otwierany kliknięciem w kartę klienta
-- Live search do CakePHP API (na razie mock)
+- Live search do CakePHP API z debounce 300ms (min. 2 znaki)
+- Adresy klienta pobierane jednorazowo po wyborze (nie przy wyszukiwaniu)
 - Zamykanie przez Escape lub kliknięcie backdropu
 - Możliwość zmiany klienta w dowolnym momencie
 - Zmiana klienta resetuje typKlienta do null
@@ -340,3 +414,46 @@ src/lib/komponenty/
 ### Nawigacja w aplikacji
 - Nowe widoki SvelteKit żyją pod /app/ obok starego CakePHP
 - Projektujemy tak by nie blokować późniejszej pełnej migracji UI do SvelteKit
+
+---
+
+## Stan na dziś (lipiec 2026)
+
+### Co działa
+- `POST /api/zamowienia/dodaj` — tworzy nowe zamówienie, działa
+- `GET /api/zamowienia/:id` — pobiera dane zamówienia do edycji, działa;
+  zwraca `uiVersion` jako int
+- `GET /api/klienci/szukaj?fraza=...` — wyszukiwanie klientów, działa;
+  czas ~35ms dzięki indeksom (przed indeksami: ~6300ms)
+- `GET /api/klienci-adresy/:id` — pobiera adresy klienta po wyborze, działa
+- `+layout.server.js` w `src/routes/zamowienia/[id]/` — pobiera dane z API,
+  sprawdza `uiVersion`, przekierowuje zamówienia legacy do starego UI
+- `src/routes/zamowienia/dodaj/+page.server.js` — tworzy nowe zamówienie,
+  redirect do widoku edycji
+- `src/lib/config.js` — eksportuje `BACKEND_URL` z `VITE_BACKEND_URL`;
+  używany wszędzie gdzie potrzebny adres backendu
+- `WyborKlienta.svelte` — podpięty pod live API; wyszukiwanie z debounce;
+  adresy pobierane po wyborze klienta
+- Widok edycji zamówienia ładuje się bez błędów, dane z API inicjalizują stan
+  (w tym id zamówienia)
+
+### Migracje wykonane na DEV
+- `002_skp_migracja.sql` — nowe tabele
+- `003_system_uprawnien.sql`
+- `004_migracja_adresow.sql` v1.4 — adresy z customer_addresses, fallback is_default,
+  poprawna obsługa braku NIP/VAT (vatno = same zera lub vatno_txt = 'BRAK')
+- `005_orders_platnosci_i_dane_do_faktury.sql` — nowe pola płatności w orders,
+  pole palety w shipments, dane słownikowe w package_types
+- `006_orders_ui_version.sql` — pole ui_version w orders (DEFAULT 1 = stary UI, 2 = nowy UI)
+- `007_indeksy_wyszukiwanie_klientow.sql` — indeksy na customers i customer_addresses;
+  czas wyszukiwania z 6300ms → 35ms
+
+### Do zrobienia (aktywna praca)
+- Warunkowy href w starym UI `.ctp` — link "Edytuj" generowany na podstawie ui_version
+- `WyborKlienta.svelte` — ulepszenia UI: NIP w wynikach, pogrubienie szukanej frazy,
+  filtr po handlowcu, przebudowa karty klienta (3 linie: nazwa skrócona / pełna / NIP+adres)
+- Autosave z retry i buforem localStorage
+- Obsługa adresów w UI (wybór, zapis nowego adresu)
+- Autoryzacja w `*ApiController` — weryfikacja uprawnień (przy wdrożeniu na produkcję)
+- Dokumentacja podziału kontroler/serwis/model w `inne/api-dokumentacja.md`
+- Ogólne poprawki i rozwinięcie interfejsu widoku edycji

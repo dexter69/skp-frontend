@@ -13,6 +13,43 @@
   // — dane(): aktualny reaktywny stan zamówienia (zawsze świeży)
   // — zaktualizuj(): częściowa aktualizacja stanu (tylko podane pola)
   const { aktywnaSekcja, dane, zaktualizuj } = getContext("zamowienie");
+
+  // Obsługuje wybór klienta z modala WyborKlienta.
+  // Wyciągnięta z szablonu do nazwanej funkcji — logika biznesowa
+  // nie powinna siedzieć inline w atrybutach komponentu.
+  function handleWyborKlienta(klient) {
+    // Szukamy domyślnego adresu wysyłki (isDefault) — fallback na pierwszy adres.
+    // adresy mogą być null gdy API jeszcze ich nie zwraca (np. z wyszukiwarki).
+    const domyslnyAdres = klient.adresy
+      ? klient.adresy.find((a) => a.isDefault) || klient.adresy[0]
+      : null;
+
+    // Aktualizujemy adresy w istniejących przesyłkach kurierskich.
+    // Przesyłki innego typu (magazyn, odbiór) nie mają adresu.
+    const przesylkiZAdresem = dane().przesylki.map((p) =>
+      Object.assign({}, p, {
+        adres: p.typDostawy === "kurier" ? domyslnyAdres : null,
+      })
+    );
+
+    zaktualizuj({
+      klient: klient,
+      typKlienta: null,
+      przesylki: przesylkiZAdresem,
+    });
+  }
+
+  // Obsługuje zmianę listy produktów.
+  // Usuwa z przesyłek pozycje których produkty zostały usunięte z zamówienia.
+  function handleZmianaProduktow(lista) {
+    const aktywneId = new Set(lista.map((p) => p.id));
+    const przesylkiOdswiezione = dane().przesylki.map((prz) =>
+      Object.assign({}, prz, {
+        pozycje: prz.pozycje.filter((poz) => aktywneId.has(poz.produkt_id)),
+      })
+    );
+    zaktualizuj({ produkty: lista, przesylki: przesylkiOdswiezione });
+  }
 </script>
 
 {#if aktywnaSekcja() === "klient"}
@@ -25,32 +62,15 @@
     <!-- Lewa kolumna: formularz zamówienia.
          min-h-0 — kluczowe dla poprawnego działania overflow-y-auto w flex.
          Bez tego przeglądarka nie pozwoli kolumnie skurczyć się i scroll nie zadziała. -->
-    <div
-      class="flex min-h-0 w-1/2 shrink-0 flex-col gap-4 overflow-y-auto xl:w-6/10"
-    >
-      <!-- Wiersz 1: karta klienta (3/4 szerokości) + metadane (1/4 szerokości).
-           Zmiana klienta resetuje typKlienta do null — handlowiec musi wybrać ponownie. -->
+    <div class="flex min-h-0 w-1/2 shrink-0 flex-col gap-4 overflow-y-auto xl:w-6/10">
+
+      <!-- Wiersz 1: karta klienta (3/4 szerokości) + metadane (1/4 szerokości). -->
       <div class="flex gap-4">
         <div class="flex-3">
           <KartaKlienta
             klient={dane().klient}
             typKlienta={dane().typKlienta}
-            onWybor={(k) => {
-              const domyslnyAdres =
-                k.adresy.find(function (a) {
-                  return a.typ === "domyslny";
-                }) || k.adresy[0];
-              const przesylkiZAdresem = dane().przesylki.map(function (p) {
-                return Object.assign({}, p, {
-                  adres: p.typDostawy === "kurier" ? domyslnyAdres : null,
-                });
-              });
-              zaktualizuj({
-                klient: k,
-                typKlienta: null,
-                przesylki: przesylkiZAdresem,
-              });
-            }}
+            onWybor={handleWyborKlienta}
             onZmianaTypu={(v) => zaktualizuj({ typKlienta: v })}
           />
         </div>
@@ -77,37 +97,20 @@
 
     <!-- Prawa kolumna: lista produktów zamówienia.
          Własny scroll wewnętrzny — niezależny od lewej kolumny. -->
-    <div
-      class="flex min-h-0 w-1/2 shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-sm xl:w-4/10"
-    >
+    <div class="flex min-h-0 w-1/2 shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-sm xl:w-4/10">
       <div class="px-4 py-3">
         <h3 class="text-xl font-semibold text-text-heading">Produkty</h3>
       </div>
       <div class="flex-1 min-h-0 overflow-hidden">
         <ListaProduktow
           produkty={dane().produkty}
-          onZmiana={(lista) => {
-            const aktywneId = new Set(
-              lista.map(function (p) {
-                return p.id;
-              }),
-            );
-            const przesylkiOdswiezione = dane().przesylki.map(function (prz) {
-              return Object.assign({}, prz, {
-                pozycje: prz.pozycje.filter(function (poz) {
-                  return aktywneId.has(poz.produkt_id);
-                }),
-              });
-            });
-            zaktualizuj({ produkty: lista, przesylki: przesylkiOdswiezione });
-          }}
+          onZmiana={handleZmianaProduktow}
         />
       </div>
     </div>
   </div>
+
 {:else if aktywnaSekcja() === "przesylki"}
-  <!-- Sekcja 2: Przesyłki
-       TODO: zbudować widok przesyłek -->
   <SekcjaPrzesylki />
 {/if}
 

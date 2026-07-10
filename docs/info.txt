@@ -1,6 +1,6 @@
 Plik
 
-project-instructions.md
+claude-project-instructions.md
 
 przechowuje instrukcje dla projektu SKP w claude.ai
 
