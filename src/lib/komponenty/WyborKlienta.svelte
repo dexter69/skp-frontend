@@ -65,7 +65,7 @@
     fraza = "";
     klienci = [];
     clearTimeout(debounceTimer);
-  }  
+  }
 
   async function wybierz(klient) {
     try {
@@ -86,6 +86,36 @@
   // Zamykanie modala klawiszem Escape.
   function handleKlawisz(e) {
     if (e.key === "Escape" && otwarty) zamknij();
+  }
+
+  // Podświetla wystąpienia frazy w tekście przez owinięcie w <strong>.
+  // Używamy {@html} w szablonie — dane pochodzą z naszego API, nie od użytkownika.
+  // Fraza jest escapowana żeby uniknąć problemów ze znakami specjalnymi w RegExp.
+  function podswietl(tekst, fraza) {
+    if (!tekst || !fraza || fraza.length < 2) return tekst ?? "";
+    const escaped = fraza.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(${escaped})`, "gi");
+    return tekst.replace(regex, "<strong>$1</strong>");
+  }
+
+  // Składa linię z NIP, kodem pocztowym, miastem i krajem.
+  // Pomija puste wartości — nie pokazujemy pustych separatorów.
+  function formatujLokalizacje(klient) {
+    const czesci = [];
+
+    if (klient.vatNo) {
+      const nip = klient.vatKraj
+        ? `${klient.vatKraj} ${klient.vatNo}`
+        : klient.vatNo;
+      czesci.push(nip);
+    }
+
+    const miejscowosc = [klient.kod, klient.miasto].filter(Boolean).join(" ");
+    if (miejscowosc) czesci.push(miejscowosc);
+
+    if (klient.kraj) czesci.push(klient.kraj);
+
+    return czesci.join(" · ");
   }
 </script>
 
@@ -146,12 +176,24 @@
                 onclick={() => wybierz(klient)}
                 class="w-full px-4 py-2.5 text-left hover:bg-bg-primary transition-colors"
               >
+                <!-- Linia 1: nazwa skrócona z podświetloną frazą -->
                 <p class="text-sm font-medium text-text-primary">
-                  {klient.nazwa}
+                  {@html podswietl(klient.nazwa, fraza)}
                 </p>
-                <p class="text-xs text-text-secondary truncate">
-                  {klient.nazwaPelna ?? ""}
-                </p>
+
+                <!-- Linia 2: pełna nazwa — tylko gdy różna od skróconej -->
+                {#if klient.nazwaPelna && klient.nazwaPelna !== klient.nazwa}
+                  <p class="text-xs text-text-secondary truncate">
+                    {@html podswietl(klient.nazwaPelna, fraza)}
+                  </p>
+                {/if}
+
+                <!-- Linia 3: NIP · kod miasto · kraj -->
+                {#if formatujLokalizacje(klient)}
+                  <p class="text-xs text-text-muted truncate">
+                    {@html podswietl(formatujLokalizacje(klient), fraza)}
+                  </p>
+                {/if}
               </button>
             </li>
           {/each}
