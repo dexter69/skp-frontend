@@ -6,12 +6,15 @@
     tworzDomyslnaPrzesylke,
   } from "$lib/stany/zamowienie.svelte.js";
 
-  // data pochodzi z load() w +layout.server.js (GET /api/zamowienia/:id).
+  // Layout formularza zamówienia — wspólny dla /zamowienia/nowe
+  // i /zamowienia/[id]/edycja (grupa tras (formularz)).
+  // data pochodzi z load() w +layout.server.js: pusty obiekt dla nowego
+  // zamówienia albo dane z GET /api/zamowienia/:id.
   let { children, data } = $props();
 
   // Stan zamówienia tworzony RAZ, przy utworzeniu komponentu.
-  // Przejście do innego zamówienia tworzy komponent od nowa dzięki
-  // {#key page.params.id} w src/routes/+layout.svelte — stąd świeży stan.
+  // Przejście do innego zamówienia (także nowe → zapisane) tworzy komponent
+  // od nowa dzięki {#key page.params.id} w src/routes/+layout.svelte — stąd świeży stan.
   const zamowienie = tworzStanZamowienia(data.zamowienie);
 
   // Definicja sekcji formularza zamówienia.
@@ -46,7 +49,13 @@
     aktywnaSekcja = sekcja.id;
   }
 
-  const badge = $derived(zamowienie.numer ? null : "Szkic");
+  // Oznaczenie przy tytule:
+  // — "Niezapisane" — nowe zamówienie, którego jeszcze nie ma w bazie (id = null),
+  // — "Szkic" — zapisane, ale bez numeru,
+  // — brak — zamówienie z numerem.
+  const badge = $derived(
+    zamowienie.id === null ? "Niezapisane" : zamowienie.numer ? null : "Szkic",
+  );
 
   const tytul = $derived(
     zamowienie.numer ? `Zamówienie ${zamowienie.numer}` : "Nowe zamówienie",

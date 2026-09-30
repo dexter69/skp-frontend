@@ -1,4 +1,8 @@
 <script>
+  // Treść formularza zamówienia (sekcje: klient i produkty, przesyłki).
+  // Jeden komponent dla obu tras: /zamowienia/nowe i /zamowienia/[id]/edycja —
+  // różnią się tylko danymi z load() w zamowienia/(formularz)/+layout.server.js.
+  // Stan zamówienia pochodzi z kontekstu ustawionego w (formularz)/+layout.svelte.
   import { getContext } from "svelte";
   import KartaKlienta from "$lib/komponenty/zamowienie/KartaKlienta.svelte";
   import MetadaneZamowienia from "$lib/komponenty/zamowienie/MetadaneZamowienia.svelte";

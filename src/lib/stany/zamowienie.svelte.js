@@ -1,4 +1,4 @@
-// Stan zamówienia — osobny plik żeby nie rozrastał się [id]/+layout.svelte.
+// Stan zamówienia — osobny plik żeby nie rozrastał się zamowienia/(formularz)/+layout.svelte.
 // Używa rozszerzenia .svelte.js (nie .js) bo korzysta z reaktywności Svelte ($state).
 // Plik .js nie obsługuje $state poza komponentami — .svelte.js tak.
 
@@ -73,7 +73,7 @@ export function tworzStanZamowienia(dane = {}) {
     uwagi: dane.uwagi ?? "",
     produkty: dane.produkty ?? [], // lista produktów w zamówieniu
     // Lista przesyłek. Pusta przy starcie — inicjalizowana przy pierwszym wejściu
-    // do sekcji Przesyłki (w wybierzSekcje w [id]/+layout.svelte).
+    // do sekcji Przesyłki (w wybierzSekcje w zamowienia/(formularz)/+layout.svelte).
     przesylki: dane.przesylki ?? [],
   });
 
@@ -82,5 +82,5 @@ export function tworzStanZamowienia(dane = {}) {
   return zamowienie;
 }
 
-// Eksportujemy tworzDomyslnaPrzesylke — używana przez [id]/+layout.svelte
+// Eksportujemy tworzDomyslnaPrzesylke — używana przez zamowienia/(formularz)/+layout.svelte
 export { tworzDomyslnaPrzesylke };

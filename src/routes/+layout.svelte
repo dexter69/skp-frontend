@@ -9,15 +9,16 @@
   // submenu: [] oznacza brak podmenu — element działa jako zwykły link.
   // deprecated: true — element wyszarzony, niedostępny (stara funkcjonalność do usunięcia w przyszłości)
   // disabled: true (w podmenu) — widok jeszcze nie istnieje; pozycja wyszarzona, nieklikalna
-  // bezPreload: true (w podmenu) — wyłącza podgląd danych przy najechaniu myszą.
-  //   app.html ma data-sveltekit-preload-data="hover", czyli SvelteKit uruchamia
-  //   load() strony już po najechaniu na link. /zamowienia/dodaj tworzy rekord
-  //   w bazie w load(), więc bez tej flagi każde najechanie zakładałoby puste zamówienie.
+  // pelnePrzeladowanie: true (w podmenu) — link ładuje stronę od nowa
+  //   (data-sveltekit-reload), z pominięciem routera SvelteKit.
+  //   "Nowe zamówienie" ma zawsze dać czysty formularz — także gdy użytkownik
+  //   jest już na /zamowienia/nowe (przejście pod ten sam adres przez router
+  //   nie tworzy komponentów od nowa, więc zostałyby wpisane dane).
   const navItems = [
     {
       label: "Zamówienia",
       submenu: [
-        { label: "Nowe zamówienie", href: "/zamowienia/dodaj", bezPreload: true },
+        { label: "Nowe zamówienie", href: "/zamowienia/nowe", pelnePrzeladowanie: true },
         { label: "Lista zamówień", href: "/zamowienia", disabled: true },
       ],
     },
@@ -124,11 +125,11 @@
                         {sub.label}
                       </span>
                     {:else}
-                      <!-- data-sveltekit-preload-data="off" tylko dla pozycji z bezPreload;
-                           undefined = atrybut pominięty, obowiązuje ustawienie z app.html -->
+                      <!-- data-sveltekit-reload tylko dla pozycji z pelnePrzeladowanie;
+                           undefined = atrybut pominięty, zwykła nawigacja przez router -->
                       <a
                         href={sub.href}
-                        data-sveltekit-preload-data={sub.bezPreload ? "off" : undefined}
+                        data-sveltekit-reload={sub.pelnePrzeladowanie ? "" : undefined}
                         class="block rounded-md px-3 py-2 text-sm font-medium text-text-muted hover:text-text-on-dark hover:bg-nav-sub-hover transition-colors"
                       >
                         {sub.label}
@@ -168,7 +169,9 @@
 <main class="ml-(--sidebar-width) h-screen overflow-hidden bg-bg-primary">
   <div class="h-full">
     <!-- {#key} tworzy podstronę od nowa, gdy zmienia się parametr id w adresie
-         (np. przejście z zamówienia A do zamówienia B, także przyciskiem Wstecz).
+         (np. przejście z zamówienia A do zamówienia B, także przyciskiem Wstecz,
+         albo z /zamowienia/nowe na /zamowienia/123/edycja po pierwszym zapisie —
+         formularz buduje się wtedy od nowa z danych zapisanych w bazie).
          Bez tego SvelteKit używa ponownie tych samych komponentów: dostają nowe
          data, ale stan utworzony przy pierwszym renderze (klient, produkty,
          id zamówienia) zostaje z poprzedniego zamówienia.

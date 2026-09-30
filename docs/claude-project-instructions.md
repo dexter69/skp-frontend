@@ -12,7 +12,9 @@ techniczne, fragmenty kodu).
 - CakePHP 2.4.x (NIE 3.x/4.x/5.x — stara architektura, inne konwencje)
 - PHP 5.6 (NIE używaj składni PHP 7/8: brak match, named arguments,
   readonly, ??=, typed properties, union types itp.)
-- MySQL 5.7
+- MySQL 5.7 (produkcja: 5.7.33) — pełny domyślny `sql_mode`, w tym
+  `ONLY_FULL_GROUP_BY` i `STRICT_TRANS_TABLES`; każde nowe zapytanie SQL
+  musi być z nim zgodne
 
 **Frontend — nowy (aktywna praca):**
 - SvelteKit (Svelte 5) — nowe widoki jako osobna aplikacja deweloperska
@@ -36,14 +38,19 @@ techniczne, fragmenty kodu).
 - Fedora Linux + GNOME
 - Visual Studio Code
 - DDEV (Docker) — lokalny serwer CakePHP
-- Claude Code (rozszerzenie VS Code) — do bezpośredniej pracy
-  z plikami projektu
-- Czat webowy claude.ai (projekt SKP) — do planowania, architektury,
-  omawiania problemów
+- Czat webowy claude.ai (projekt SKP) — planowanie, architektura, kod.
+  Claude Code obecnie nieużywany (decyzja: wrzesień 2026)
+- Repo skp-frontend jest publiczne (https://github.com/dexter69/skp-frontend) —
+  Claude klonuje je sam; backend jest prywatny — potrzebne pliki wrzucam do czatu
+- Zmiany we frontendzie Claude dostarcza jako patch do `git apply`,
+  w backendzie jako pełne pliki do podmiany
 
 **CakePHP (przez DDEV):**
 - Adres lokalny: https://skp2x.ddev.site
-- PHP 5.6, MySQL 5.7 skonfigurowane w DDEV
+- PHP 5.6, MySQL 5.7 w DDEV (od września 2026; wcześniej MariaDB 10.2) —
+  ten sam silnik co produkcja
+- `.ddev/mysql/sql_mode.cnf` — `sql_mode` identyczny z produkcją
+- Katalog projektu: `~/DEV/PK/skp2x`
 
 **SvelteKit:**
 - Osobny projekt poza DDEV — uruchamiany natywnie na Fedorze
@@ -116,6 +123,16 @@ ShipmentsApiController.php → model: ShipmentApi
 - **Kontroler** (`*ApiController.php`) — tylko HTTP: waliduje żądanie,
   wywołuje serwis, zwraca odpowiedź przez `_respondSuccess()` / `_respondError()`.
 
+**Konwencje odpowiedzi API** (szczegóły: `api-dokumentacja.md`):
+- Klienta i adres formatuje wyłącznie `CustomerService` (`pobierzKlienta()`,
+  `formatujAdres()`) — ten sam kształt w każdym endpoincie; inne serwisy
+  z niego korzystają zamiast mieć własne kopie
+- Teksty jednoliniowe czyszczone przez `AppService::_czyscTekst()` (stary UI
+  nie przycina danych); brak wartości = `null`
+- Identyfikatory wartości w ASCII (np. `typKlienta`: `nowy` / `staly`)
+- Adres siedziby klienta: jeden aktywny `is_siedziba = 1`; przy złych danych
+  API bierze adres o najniższym id
+
 **Routing CakePHP — ważne zasady:**
 - Używamy wzorca `*` zamiast `:id` (CakePHP 2.4 nie obsługuje named params w API)
 - Id odczytujemy przez `$this->request->params['pass'][0]`
@@ -168,24 +185,33 @@ obsługiwane przez `$useTable` w modelach.
 ### Routing SvelteKit — aktualne widoki
 
 ```
-/zamowienia/dodaj          → tworzy nowe zamówienie (POST do API), redirect do edycji
-/zamowienia/[id]/edycja    → widok edycji zamówienia (nowe i istniejące)
+/zamowienia/nowe           → nowe zamówienie — pusty formularz, NIC nie tworzy w bazie
+/zamowienia/[id]/edycja    → edycja istniejącego zamówienia
 ```
 
-**Struktura plików dla widoku edycji:**
+Jeden formularz dla obu tras — grupa tras `(formularz)` (nawias nie trafia do adresu):
 ```
-src/routes/zamowienia/
-  dodaj/
-    +page.server.js        — POST do API, redirect do /zamowienia/[id]/edycja
-  [id]/
-    +layout.server.js      — pobiera dane z API, sprawdza uiVersion, redirect legacy
-    +layout.svelte         — inicjalizuje stan zamówienia, sidebar z sekcjami
-    edycja/
-      +page.svelte         — widok edycji (sekcja 1: klient+produkty, sekcja 2: przesyłki)
+src/routes/zamowienia/(formularz)/
+  +layout.server.js        — nowe: pusty stan bez API; [id]: GET z API,
+                             sprawdza uiVersion, redirect legacy
+  +layout.svelte           — inicjalizuje stan zamówienia, sidebar z sekcjami, "Zapisz"
+  nowe/+page.svelte        — <FormularzZamowienia />
+  [id=liczba]/edycja/+page.svelte — <FormularzZamowienia />
+src/params/liczba.js       — matcher: id w adresie musi być liczbą (inaczej 404)
+src/lib/komponenty/zamowienie/FormularzZamowienia.svelte — treść formularza (sekcje)
 ```
 
-**Ważne:** `+layout.server.js` musi być na poziomie `[id]/`, nie `[id]/edycja/` —
-inaczej `+layout.svelte` nie dostaje danych z API (`data.zamowienie` byłoby undefined).
+**Zasada: GET nigdy nie tworzy rekordów.** Otwarcie adresu (także z historii,
+zakładki, podglądu linku) nie może niczego zapisywać w bazie.
+
+**Globalny layout:** `{#key page.params.id}` wokół treści — zmiana id w adresie
+(inne zamówienie, Wstecz, nowe → zapisane) tworzy podstronę od nowa. Bez tego
+SvelteKit używa ponownie komponentów i zostaje stan poprzedniego zamówienia.
+Konsekwencja: nowa instancja powstaje PRZED zniszczeniem starej (Svelte 5) —
+stąd `ustawKontekst()` sidebara zwraca funkcję czyszczącą tylko własny snippet.
+
+Przyszły podgląd `/zamowienia/[id]` powstanie poza grupą `(formularz)` —
+nie dziedziczy layoutu edycji.
 
 **CORS na DEV:** `AppApiController::beforeFilter()` ustawia nagłówki CORS dla
 `http://localhost:5173` — pozwala na fetch z przeglądarki. Na produkcji bez znaczenia
@@ -236,7 +262,7 @@ idą bezpośrednio Node.js → CakePHP.
 - Zawsze zwracaj uwagę gdy proponowane rozwiązanie jest hackiem
 - Zmiany wprowadzamy krokami: jeden krok → sprawdzamy → następny
 - W JavaScript zawsze używaj let/const, nigdy var
-- Dane mockowe centralizowane w `src/lib/api/mockDane.js`
+- Dane mockowe (gdyby były potrzebne) w `src/lib/api/` — obecnie brak
 - Algorytmy biznesowe w `src/lib/algorytmy/`
 - Procedura squash commitów przed push: `inne/git-squash-i-push.md`
 
@@ -253,7 +279,16 @@ idą bezpośrednio Node.js → CakePHP.
 
 ### Strategia zapisu
 - Zamówienie można zapisać w dowolnym momencie (nie dopiero po wypełnieniu wszystkiego)
-- Zamówienie istnieje w bazie od początku jako szkic (draft)
+- Zamówienie powstaje w bazie przy PIERWSZYM zapisie (wzorzec new/edit jak
+  w Rails/Laravel/CakePHP add+edit) — samo otwarcie `/zamowienia/nowe` nic nie tworzy
+- Po pierwszym zapisie: nawigacja na `/zamowienia/[id]/edycja` z zastąpieniem
+  wpisu w historii (Post/Redirect/Get) — formularz buduje się od nowa z danych
+  z bazy; aktywną sekcję przenosimy przez stan nawigacji
+- NIE shallow routing (`replaceState` z `$app/navigation`) — SvelteKit zapamiętuje
+  wtedy w historii pierwotny adres; Wstecz otworzyłby pusty formularz `nowe`
+- Autosave tylko dla zamówień, które mają id; niezapisane nowe zamówienie
+  chroni bufor localStorage + ostrzeżenie "niezapisane zmiany" przy wyjściu
+- "Szkic" = zapisane zamówienie bez numeru; "Niezapisane" = jeszcze nie w bazie
 
 ### Sekcje formularza
 - Sekcja 1: Klient i produkty
@@ -261,17 +296,21 @@ idą bezpośrednio Node.js → CakePHP.
 - Sekcja 3: TBD (placeholder w sidebarze)
 
 ### Routing
-- `/zamowienia/dodaj` — tworzy nowy rekord w bazie, redirect do edycji
-- `/zamowienia/[id]/edycja` — jedyny widok edycji (nowe i istniejące)
-- `/zamowienia/[id]` — podgląd (przyszłość)
-- Nowe zamówienie: POST do backendu → tworzy pusty rekord → redirect do edycji
+- `/zamowienia/nowe` — nowe zamówienie (pusty formularz, bez rekordu w bazie)
+- `/zamowienia/[id]/edycja` — edycja istniejącego; ten sam formularz co nowe
+- `/zamowienia/[id]` — podgląd (przyszłość, poza grupą `(formularz)`)
+- Link „Nowe zamówienie” w sidebarze: pełne przeładowanie (`data-sveltekit-reload`) —
+  zawsze czysty formularz, także gdy użytkownik już jest na `/zamowienia/nowe`
 
 ### Layout i sidebar
 - Globalny `+layout.svelte` — sidebar dwustrefowy:
   - Strefa górna: kontekstowa (wstrzykiwana przez podstrony przez Context API)
   - Strefa dolna: stała nawigacja aplikacji
 - Szerokość sidebara kontrolowana przez `--sidebar-width` w `app.css`
-- Strefa górna wstrzykiwana przez snippet z `[id]/+layout.svelte`
+- Strefa górna wstrzykiwana przez snippet z `zamowienia/(formularz)/+layout.svelte`;
+  `ustawKontekst(snippet)` zwraca funkcję czyszczącą (wywoływaną w `onDestroy`)
+- Pozycje nawigacji: `disabled` (widok jeszcze nie istnieje — wyszarzone),
+  `deprecated` (stara funkcja), `pelnePrzeladowanie` (link z `data-sveltekit-reload`)
 - Kontener treści podstrony: `flex-1 overflow-hidden` (nie overflow-y-auto —
   scroll obsługiwany wewnętrznie przez każdą podstronę)
 
@@ -297,6 +336,8 @@ idą bezpośrednio Node.js → CakePHP.
 - `zaktualizuj()` robi głęboki merge dla zagnieżdżonych obiektów
 - Domyślna data realizacji: dziś + 10 dni roboczych (bez weekendów, bez świąt)
 - Struktura produktu: `{ id, nazwa, ilosc, cena }` — cena jako number (JS)
+- Nowe zamówienie: `id = null`; `typKlienta`: `'nowy'` / `'staly'` / `null`
+- Oznaczenie przy tytule: „Niezapisane” (id = null), „Szkic” (brak numeru)
 
 ### Ikony
 - Biblioteka: `@tabler/icons-svelte-runes` (oficjalny pakiet dla Svelte 5)
@@ -328,7 +369,7 @@ idą bezpośrednio Node.js → CakePHP.
 - Tymczasowe id dla nowych rekordów: ujemne liczby całkowite
   (nie kolidują z id z bazy, zastępowane przez API po zapisie)
 - Zmiana klienta resetuje powiązane pola (np. typKlienta → null)
-- Logika wyboru klienta w nazwanej funkcji `handleWyborKlienta()` w `+page.svelte`
+- Logika wyboru klienta w nazwanej funkcji `handleWyborKlienta()` w `FormularzZamowienia.svelte`
   (nie jako anonymous function inline w atrybucie komponentu)
 
 ### Komponenty
@@ -339,17 +380,23 @@ src/lib/komponenty/
                                 rozmiary: sm/md/lg; prop klasa dla dodatkowych klas CSS
   Toggle.svelte               — uniwersalny toggle, prop kolorAktywny (CSS var)
   WyborOpcji.svelte           — uniwersalny wybór opcji (radio buttons)
-  zamowienie/
-    KartaKlienta.svelte       — panel klienta + otwiera modal wyboru;
-                                cały obszar klikalny (div z role="button");
-                                typ klienta (nowy/stały) w prawym dolnym rogu
-                                przez WyborOpcji (absolutnie pozycjonowany)
-    WyborKlienta.svelte       — Command Palette wyszukiwania klienta; live search
+  WyborKlienta.svelte         — Command Palette wyszukiwania klienta; live search
                                 do API z debounce 300ms; po wyborze pobiera adresy
                                 klienta przez GET /api/klienci-adresy/:id
+  DevPanel.svelte             — podgląd stanu zamówienia (JSON); usunąć przed produkcją
+  zamowienie/
+    FormularzZamowienia.svelte — treść formularza (sekcje); używany przez
+                                /zamowienia/nowe i /zamowienia/[id]/edycja
+    KartaKlienta.svelte       — panel klienta + otwiera modal wyboru;
+                                cały obszar klikalny (div z role="button");
+                                do 6 linii: nazwa, pełna nazwa, ulica, kod/miasto/kraj,
+                                VAT, „Opiekun: <imię>” (pogrubione);
+                                typ klienta (nowy/stały) w prawym dolnym rogu
+                                przez WyborOpcji (absolutnie pozycjonowany)
     WyborAdresu.svelte        — modal wyboru adresu dostawy z książki adresowej;
-                                lista od razu widoczna, filtry typów jako pill-buttony,
-                                typy generowane dynamicznie z dostępnych typów adresu
+                                lista od razu widoczna, filtry typów jako pill-buttony.
+                                ZNANY BŁĄD: filtry czytają pole `typ` (format mock),
+                                API zwraca flagi isWysylka/isFaktura/isSiedziba
     MetadaneZamowienia.svelte — data realizacji, ekspresowe (toggle)
     Platnosci.svelte          — logika płatności (przedpłata + płatność po)
     NotatkaZamowienia.svelte  — taby: "Dane do faktury" / "Uwagi";
@@ -417,25 +464,23 @@ src/lib/komponenty/
 
 ---
 
-## Stan na dziś (lipiec 2026)
+## Stan na dziś (wrzesień 2026)
 
 ### Co działa
-- `POST /api/zamowienia/dodaj` — tworzy nowe zamówienie, działa
-- `GET /api/zamowienia/:id` — pobiera dane zamówienia do edycji, działa;
-  zwraca `uiVersion` jako int
-- `GET /api/klienci/szukaj?fraza=...` — wyszukiwanie klientów, działa;
-  czas ~35ms dzięki indeksom (przed indeksami: ~6300ms)
-- `GET /api/klienci-adresy/:id` — pobiera adresy klienta po wyborze, działa
-- `+layout.server.js` w `src/routes/zamowienia/[id]/` — pobiera dane z API,
-  sprawdza `uiVersion`, przekierowuje zamówienia legacy do starego UI
-- `src/routes/zamowienia/dodaj/+page.server.js` — tworzy nowe zamówienie,
-  redirect do widoku edycji
-- `src/lib/config.js` — eksportuje `BACKEND_URL` z `VITE_BACKEND_URL`;
-  używany wszędzie gdzie potrzebny adres backendu
-- `WyborKlienta.svelte` — podpięty pod live API; wyszukiwanie z debounce;
-  adresy pobierane po wyborze klienta
-- Widok edycji zamówienia ładuje się bez błędów, dane z API inicjalizują stan
-  (w tym id zamówienia)
+- `GET /api/zamowienia/:id` — pełne dane zamówienia; klient w tym samym formacie
+  co w wyszukiwarce (z opiekunem i adresami); zwraca `uiVersion` jako int
+- `GET /api/klienci/szukaj?fraza=...` — zgodne z `ONLY_FULL_GROUP_BY`,
+  deterministyczny wybór siedziby, opiekun, czyszczenie tekstów
+- `GET /api/klienci-adresy/:id` — adresy w formacie wspólnym (`kod`, `vatKraj`, `kraj`)
+- `POST /api/zamowienia/dodaj` — istnieje w backendzie, NIEUŻYWANY przez nowy UI
+  (do usunięcia przy budowie zapisu)
+- `/zamowienia/nowe` — pusty formularz bez rekordu w bazie
+- `/zamowienia/[id]/edycja` — edycja istniejącego; redirect legacy dla `ui_version != 2`
+- Świeży stan przy przejściu między zamówieniami (`{#key}` w globalnym layoucie)
+- `KartaKlienta` — pełne dane klienta + opiekun; typ klienta zgodny z API
+- `src/lib/config.js` — eksportuje `BACKEND_URL` z `VITE_BACKEND_URL`
+- „Zapisz zamówienie” — przycisk bez działania; nowego zamówienia nie da się
+  jeszcze utworzyć (do testów: istniejące rekordy z `ui_version = 2`)
 
 ### Migracje wykonane na DEV
 - `002_skp_migracja.sql` — nowe tabele
@@ -447,13 +492,25 @@ src/lib/komponenty/
 - `006_orders_ui_version.sql` — pole ui_version w orders (DEFAULT 1 = stary UI, 2 = nowy UI)
 - `007_indeksy_wyszukiwanie_klientow.sql` — indeksy na customers i customer_addresses;
   czas wyszukiwania z 6300ms → 35ms
+- Sprawdzone na produkcji: brak dat `0000-00-00` jako wartości domyślnych kolumn
+  i w `addresses` (migracja 004 i ALTER TABLE bezpieczne pod tym względem)
 
 ### Do zrobienia (aktywna praca)
-- Warunkowy href w starym UI `.ctp` — link "Edytuj" generowany na podstawie ui_version
-- `WyborKlienta.svelte` — ulepszenia UI: NIP w wynikach, pogrubienie szukanej frazy,
-  filtr po handlowcu, przebudowa karty klienta (3 linie: nazwa skrócona / pełna / NIP+adres)
-- Autosave z retry i buforem localStorage
-- Obsługa adresów w UI (wybór, zapis nowego adresu)
+- **Zapis zamówienia** — endpoint tworzący/aktualizujący, mapowanie ujemnych id,
+  przejście `nowe` → `/zamowienia/[id]/edycja`, numer i szkic
+- **Ochrona pracy** — ostrzeżenie o niezapisanych zmianach, bufor localStorage,
+  autosave dla zapisanych zamówień (z retry)
+- **Przesyłki** — omówienie całej sekcji; m.in. filtry typów w `WyborAdresu`,
+  `typDostawy` `odbior_osobisty` (front) vs `odbior` (baza), kurierzy i paczki
+  ze słowników API, potwierdzenie usunięcia przesyłki
+- `WyborKlienta.svelte` — filtr po handlowcu (opiekunie)
+- Obsługa adresów w UI — zapis nowego adresu do książki adresowej
+- Wdrożenie — adapter-node, base `/app`, osobny adres backendu dla fetchy
+  server-side (pusty `BACKEND_URL` nie zadziała w Node), próba generalna
+  migracji na zrzucie produkcji
 - Autoryzacja w `*ApiController` — weryfikacja uprawnień (przy wdrożeniu na produkcję)
+- Stary UI (na końcu migracji) — link „Edytuj” wg `ui_version`, „Dodaj” →
+  `/app/zamowienia/nowe`, ukrycie artefaktów nowego UI
+- Sprzątanie pustych zamówień `ui_version = 2` powstałych na DEV przez dawne `dodaj`
 - Dokumentacja podziału kontroler/serwis/model w `inne/api-dokumentacja.md`
-- Ogólne poprawki i rozwinięcie interfejsu widoku edycji
+- Sekcja „Podsumowanie” — na końcu
