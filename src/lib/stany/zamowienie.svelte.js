@@ -67,7 +67,7 @@ export function tworzStanZamowienia(dane = {}) {
     // Dla istniejącego zamówienia — data z bazy. Dla nowego — obliczona automatycznie.
     dataRealizacji: dane.dataRealizacji ?? dodajDniRobocze(new Date(), 10),
     ekspresowe: dane.ekspresowe ?? false, // czy zamówienie ekspresowe
-    typKlienta: dane.typKlienta ?? null, // 'nowy' lub 'stały' — null gdy nie wybrano
+    typKlienta: dane.typKlienta ?? null, // 'nowy' lub 'staly' — null gdy nie wybrano
     platnosci: dane.platnosci ?? {}, // szczegóły płatności (do rozwinięcia)
     daneDoFaktury: dane.daneDoFaktury ?? "",
     uwagi: dane.uwagi ?? "",

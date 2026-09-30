@@ -4,7 +4,9 @@
 
   // Props przekazywane z +page.svelte:
   // — klient: dane wybranego klienta lub null gdy nie wybrano
-  // — typKlienta: 'nowy' / 'stały' / null — resetowany do null przy zmianie klienta
+  // — typKlienta: 'nowy' / 'staly' / null — resetowany do null przy zmianie klienta
+  //   Wartość 'staly' bez polskich znaków — taką zwraca i przyjmuje API.
+  //   Polski napis „Stały” to tylko etykieta przycisku (label w WyborOpcji).
   // — onWybor: callback wywoływany po wyborze klienta z modala
   // — onZmianaTypu: callback wywoływany przy zmianie typu klienta
   let { klient = null, typKlienta = null, onWybor, onZmianaTypu } = $props();
@@ -54,7 +56,7 @@
   <p class="text-xs text-text-muted mb-3">Zamówienie dla:</p>
 
   {#if klient}
-    <!-- Stan: klient wybrany — 4 linie informacji -->
+    <!-- Stan: klient wybrany — do 6 linii informacji; puste linie są pomijane -->
     <div class="pr-24 space-y-1">
       <!-- Linia 1: nazwa skrócona — duża, bold -->
       <p class="text-base font-bold text-text-heading leading-tight">
@@ -82,10 +84,18 @@
         </p>
       {/if}
 
-      <!-- Linia 5: VAT — na końcu -->
+      <!-- Linia 5: VAT -->
       {#if formatujVat(klient)}
         <p class="text-xs text-text-muted">
           {formatujVat(klient)}
+        </p>
+      {/if}
+
+      <!-- Linia 6: opiekun klienta (handlowiec) — imię z users.name.
+           Konwencja w aplikacji: osoby po imieniu. -->
+      {#if klient.opiekun}
+        <p class="text-xs text-text-muted">
+          Opiekun: <span class="font-semibold text-text-secondary">{klient.opiekun}</span>
         </p>
       {/if}
     </div>
@@ -108,7 +118,7 @@
       <WyborOpcji
         opcje={[
           { id: "nowy", label: "Nowy" },
-          { id: "stały", label: "Stały" },
+          { id: "staly", label: "Stały" },
         ]}
         wartosc={typKlienta}
         onZmiana={(v) => onZmianaTypu?.(v)}
