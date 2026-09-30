@@ -22,11 +22,13 @@
 
   // Filtrowanie po frazie (min. 2 znaki) i aktywnym typie.
   // Gdy fraza krótsza niż 2 znaki — pokazujemy wszystkie (tylko filtr typem).
+  // API zwraca null dla pustych pól — stąd (a.nazwa || '') przed toLowerCase().
   const widoczneAdresy = $derived(
     adresy.filter(function(a) {
+      const f = fraza.toLowerCase();
       const pasujeFraza = fraza.length < 2 ||
-        a.nazwa.toLowerCase().includes(fraza.toLowerCase()) ||
-        a.miasto.toLowerCase().includes(fraza.toLowerCase());
+        (a.nazwa || '').toLowerCase().includes(f) ||
+        (a.miasto || '').toLowerCase().includes(f);
       const pasujeTyp = aktywnyFiltr === null || a.typ === aktywnyFiltr;
       return pasujeFraza && pasujeTyp;
     })
@@ -154,7 +156,7 @@
                 </div>
                 <!-- Linia 2: ulica, kod pocztowy, miasto -->
                 <p class="text-sm text-text-secondary">
-                  {adres.ulica}, {adres.kodPocztowy} {adres.miasto}
+                  {adres.ulica}, {adres.kod} {adres.miasto}
                 </p>
               </button>
             </li>

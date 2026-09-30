@@ -155,7 +155,7 @@
               {przesylka.adres.ulica}
             </p>
             <p class="text-xs text-text-secondary">
-              {przesylka.adres.kodPocztowy}
+              {przesylka.adres.kod}
               {przesylka.adres.miasto}
             </p>
           </div>
