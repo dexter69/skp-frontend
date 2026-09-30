@@ -483,8 +483,10 @@ src/lib/komponenty/
   jeszcze utworzyć (do testów: istniejące rekordy z `ui_version = 2`)
 
 ### Migracje wykonane na DEV
+- `001_system-uprawnien.sql` — system uprawnień
 - `002_skp_migracja.sql` — nowe tabele
-- `003_system_uprawnien.sql`
+- `003_orders_nullable_pola_klienta_i_adresow.sql` — pola klienta i adresów
+  w orders nullable (zamówienie może istnieć bez klienta)
 - `004_migracja_adresow.sql` v1.4 — adresy z customer_addresses, fallback is_default,
   poprawna obsługa braku NIP/VAT (vatno = same zera lub vatno_txt = 'BRAK')
 - `005_orders_platnosci_i_dane_do_faktury.sql` — nowe pola płatności w orders,
