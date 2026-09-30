@@ -1,6 +1,7 @@
 <script>
   import "../app.css";
   import { setContext } from "svelte";
+  import { page } from "$app/state";
 
   let { children } = $props();
 
@@ -39,14 +40,27 @@
   // Mechanizm dwustrefowego sidebara.
   // Górna strefa jest kontekstowa — każda podstrona może wstrzyknąć tam
   // swój snippet (np. sekcje formularza zamówienia) przez getContext('sidebar').
-  // Gdy użytkownik opuści podstronę, snippet jest czyszczony automatycznie.
+  //
+  // ustawKontekst() zwraca funkcję czyszczącą — podstrona wywołuje ją w onDestroy.
+  // Funkcja czyści tylko WŁASNY snippet: przy przejściu z zamówienia A do B
+  // nowa instancja podstrony (B) ustawia swój snippet, ZANIM stara (A) zostanie
+  // zniszczona. Bez tego sprawdzenia A wyczyściłaby snippet B i sekcje
+  // formularza zniknęłyby z sidebara.
   let kontekstGorny = $state(null);
+  let aktualnyToken = null; // kto aktualnie "trzyma" górną strefę — zwykła zmienna, nie stan
+
   setContext("sidebar", {
     ustawKontekst: (komponent) => {
+      const token = {}; // unikalny obiekt — identyfikuje to jedno wywołanie
+      aktualnyToken = token;
       kontekstGorny = komponent;
-    },
-    wyczyscKontekst: () => {
-      kontekstGorny = null;
+
+      return function wyczysc() {
+        if (aktualnyToken === token) {
+          aktualnyToken = null;
+          kontekstGorny = null;
+        }
+      };
     },
   });
 </script>
@@ -153,6 +167,15 @@
      Tylko PG scrolluje — nie cała strona. -->
 <main class="ml-(--sidebar-width) h-screen overflow-hidden bg-bg-primary">
   <div class="h-full">
-    {@render children()}
+    <!-- {#key} tworzy podstronę od nowa, gdy zmienia się parametr id w adresie
+         (np. przejście z zamówienia A do zamówienia B, także przyciskiem Wstecz).
+         Bez tego SvelteKit używa ponownie tych samych komponentów: dostają nowe
+         data, ale stan utworzony przy pierwszym renderze (klient, produkty,
+         id zamówienia) zostaje z poprzedniego zamówienia.
+         Dotyczy każdej trasy z parametrem [id]; dla tras bez niego klucz
+         jest undefined i nic się nie dzieje. -->
+    {#key page.params.id}
+      {@render children()}
+    {/key}
   </div>
 </main>

@@ -6,11 +6,12 @@
     tworzDomyslnaPrzesylke,
   } from "$lib/stany/zamowienie.svelte.js";
 
-  // data pochodzi z load() w +layout.js — mock lub docelowo API.
+  // data pochodzi z load() w +layout.server.js (GET /api/zamowienia/:id).
   let { children, data } = $props();
 
-  // Stan zamówienia tworzony na podstawie danych z load().
-  // Gdy load() zostanie podpięty do API — tu nic się nie zmienia.
+  // Stan zamówienia tworzony RAZ, przy utworzeniu komponentu.
+  // Przejście do innego zamówienia tworzy komponent od nowa dzięki
+  // {#key page.params.id} w src/routes/+layout.svelte — stąd świeży stan.
   const zamowienie = tworzStanZamowienia(data.zamowienie);
 
   // Definicja sekcji formularza zamówienia.
@@ -51,9 +52,11 @@
     zamowienie.numer ? `Zamówienie ${zamowienie.numer}` : "Nowe zamówienie",
   );
 
+  // Sekcje formularza w górnej strefie sidebara. Funkcja zwrócona przez
+  // ustawKontekst() czyści tylko nasz snippet (patrz komentarz w src/routes/+layout.svelte).
   const sidebar = getContext("sidebar");
-  sidebar.ustawKontekst(nawigacjaSekcji);
-  onDestroy(() => sidebar.wyczyscKontekst());
+  const wyczyscSidebar = sidebar.ustawKontekst(nawigacjaSekcji);
+  onDestroy(wyczyscSidebar);
 
   setContext("zamowienie", {
     aktywnaSekcja: () => aktywnaSekcja,
