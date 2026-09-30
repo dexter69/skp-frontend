@@ -7,17 +7,22 @@
   // Definicja nawigacji aplikacji.
   // submenu: [] oznacza brak podmenu — element działa jako zwykły link.
   // deprecated: true — element wyszarzony, niedostępny (stara funkcjonalność do usunięcia w przyszłości)
+  // disabled: true (w podmenu) — widok jeszcze nie istnieje; pozycja wyszarzona, nieklikalna
+  // bezPreload: true (w podmenu) — wyłącza podgląd danych przy najechaniu myszą.
+  //   app.html ma data-sveltekit-preload-data="hover", czyli SvelteKit uruchamia
+  //   load() strony już po najechaniu na link. /zamowienia/dodaj tworzy rekord
+  //   w bazie w load(), więc bez tej flagi każde najechanie zakładałoby puste zamówienie.
   const navItems = [
     {
       label: "Zamówienia",
       submenu: [
-        { label: "Nowe zamówienie", href: "/zamowienia/nowe" },
-        { label: "Lista zamówień", href: "/zamowienia" },
+        { label: "Nowe zamówienie", href: "/zamowienia/dodaj", bezPreload: true },
+        { label: "Lista zamówień", href: "/zamowienia", disabled: true },
       ],
     },
     {
       label: "Przesyłki",
-      submenu: [{ label: "Lista przesyłek", href: "#" }],
+      submenu: [{ label: "Lista przesyłek", href: "#", disabled: true }],
     },
     { label: "Klienci", submenu: [] },
     { label: "Produkcja", submenu: [] },
@@ -96,12 +101,25 @@
               <ul class="mt-1 space-y-1 pl-4">
                 {#each item.submenu as sub}
                   <li>
-                    <a
-                      href={sub.href}
-                      class="block rounded-md px-3 py-2 text-sm font-medium text-text-muted hover:text-text-on-dark hover:bg-nav-sub-hover transition-colors"
-                    >
-                      {sub.label}
-                    </a>
+                    {#if sub.disabled}
+                      <!-- Widok jeszcze nie istnieje — wyszarzony, bez linku -->
+                      <span
+                        title="Wkrótce"
+                        class="block rounded-md px-3 py-2 text-sm font-medium text-text-muted opacity-50 cursor-not-allowed"
+                      >
+                        {sub.label}
+                      </span>
+                    {:else}
+                      <!-- data-sveltekit-preload-data="off" tylko dla pozycji z bezPreload;
+                           undefined = atrybut pominięty, obowiązuje ustawienie z app.html -->
+                      <a
+                        href={sub.href}
+                        data-sveltekit-preload-data={sub.bezPreload ? "off" : undefined}
+                        class="block rounded-md px-3 py-2 text-sm font-medium text-text-muted hover:text-text-on-dark hover:bg-nav-sub-hover transition-colors"
+                      >
+                        {sub.label}
+                      </a>
+                    {/if}
                   </li>
                 {/each}
               </ul>

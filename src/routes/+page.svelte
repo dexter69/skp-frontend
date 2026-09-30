@@ -1,4 +1,5 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
-
-<h1 class="text-3xl font-bold text-blue-600">SKP Frontend</h1>
+<!-- Strona startowa nowego UI (/).
+     Na razie bez treści — nawigacja jest w sidebarze. -->
+<div class="flex h-full items-center justify-center">
+  <p class="text-sm text-text-muted">Wybierz pozycję z menu po lewej.</p>
+</div>

@@ -1,5 +1,7 @@
-// src/routes/zamowienia/[id]/edycja/+layout.server.js
+// src/routes/zamowienia/[id]/+layout.server.js
 // Ładuje dane zamówienia z CakePHP API przed renderowaniem layoutu.
+// Jedyne miejsce pobierania zamówienia — +layout.svelte inicjalizuje z tych danych
+// stan zamówienia, a podstrony (np. edycja) czytają go z kontekstu.
 // Używamy .server.js (nie .js) bo potrzebujemy dostępu do cookies
 // żeby przekazać sesję PHP do CakePHP (komunikacja Node.js → CakePHP).
 
@@ -10,7 +12,6 @@ export async function load({ params, cookies }) {
     const sesja = cookies.get('CAKEPHP');
     const id = params.id;
 
-    console.log('Cookie sesji:', sesja);
     const response = await fetch(`${BACKEND_URL}/api/zamowienia/${id}`, {
         method: 'GET',
         headers: {
