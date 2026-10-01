@@ -19,10 +19,13 @@
   } = $props();
 
   // Opcje typu dostawy — docelowo z API, na razie mock.
+  // Identyfikatory muszą być zgodne z wartościami shipments.type w bazie
+  // (kurier / magazyn / odbior / kurier_klienta) — inaczej przesyłka wczytana
+  // z bazy nie będzie miała zaznaczonego typu. Etykieta to tylko tekst w UI.
   const OPCJE_TYPU_DOSTAWY = [
     { id: "kurier", label: "Kurier" },
     { id: "magazyn", label: "Magazyn" },
-    { id: "odbior_osobisty", label: "Odbiór osobisty" },
+    { id: "odbior", label: "Odbiór osobisty" },
     { id: "kurier_klienta", label: "Kurier klienta" },
   ];
 

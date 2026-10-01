@@ -34,7 +34,8 @@ function tworzDomyslnaPrzesylke(produkty) {
     // UI dla nazwy własnej: TODO na przyszłość.
     nazwa: null,
     // Typ dostawy — domyślnie 'kurier' (najczęstszy przypadek).
-    // Możliwe wartości: 'kurier' | 'magazyn' | 'odbior_osobisty' | 'kurier_klienta'
+    // Możliwe wartości (zgodne z shipments.type w bazie):
+    // 'kurier' | 'magazyn' | 'odbior' | 'kurier_klienta'
     typDostawy: "kurier",
     // Adres dostawy — domyślny adres klienta ładowany przez SekcjaPrzesylki.
     // null do czasu załadowania książki adresowej klienta z API.

@@ -503,8 +503,7 @@ src/lib/komponenty/
 - **Ochrona pracy** — ostrzeżenie o niezapisanych zmianach, bufor localStorage,
   autosave dla zapisanych zamówień (z retry)
 - **Przesyłki** — omówienie całej sekcji; m.in. filtry typów w `WyborAdresu`,
-  `typDostawy` `odbior_osobisty` (front) vs `odbior` (baza), kurierzy i paczki
-  ze słowników API, potwierdzenie usunięcia przesyłki
+  kurierzy i paczki ze słowników API, potwierdzenie usunięcia przesyłki
 - `WyborKlienta.svelte` — filtr po handlowcu (opiekunie)
 - Obsługa adresów w UI — zapis nowego adresu do książki adresowej
 - Wdrożenie — adapter-node, base `/app`, osobny adres backendu dla fetchy
