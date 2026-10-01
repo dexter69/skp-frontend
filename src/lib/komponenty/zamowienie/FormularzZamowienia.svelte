@@ -11,6 +11,7 @@
   import ListaProduktow from "$lib/komponenty/zamowienie/ListaProduktow.svelte";
   import SekcjaPrzesylki from "$lib/komponenty/zamowienie/przesylki/SekcjaPrzesylki.svelte";
   import DevPanel from "$lib/komponenty/DevPanel.svelte";
+  import { wybierzDomyslnyAdres } from "$lib/algorytmy/adresy.js";
 
   // Pobieramy z kontekstu zamówienia:
   // — aktywnaSekcja(): która sekcja jest aktualnie wybrana w sidebarze
@@ -22,11 +23,8 @@
   // Wyciągnięta z szablonu do nazwanej funkcji — logika biznesowa
   // nie powinna siedzieć inline w atrybutach komponentu.
   function handleWyborKlienta(klient) {
-    // Szukamy domyślnego adresu wysyłki (isDefault) — fallback na pierwszy adres.
-    // adresy mogą być null gdy API jeszcze ich nie zwraca (np. z wyszukiwarki).
-    const domyslnyAdres = klient.adresy
-      ? klient.adresy.find((a) => a.isDefault) || klient.adresy[0]
-      : null;
+    // Domyślny adres wysyłki klienta (reguła w $lib/algorytmy/adresy.js).
+    const domyslnyAdres = wybierzDomyslnyAdres(klient.adresy);
 
     // Aktualizujemy adresy w istniejących przesyłkach kurierskich.
     // Przesyłki innego typu (magazyn, odbiór) nie mają adresu.

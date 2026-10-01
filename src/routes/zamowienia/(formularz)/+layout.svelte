@@ -5,6 +5,7 @@
     tworzStanZamowienia,
     tworzDomyslnaPrzesylke,
   } from "$lib/stany/zamowienie.svelte.js";
+  import { wybierzDomyslnyAdres } from "$lib/algorytmy/adresy.js";
 
   // Layout formularza zamówienia — wspólny dla /zamowienia/nowe
   // i /zamowienia/[id]/edycja (grupa tras (formularz)).
@@ -36,10 +37,9 @@
       zamowienie.przesylki.length === 0 &&
       zamowienie.produkty.length > 0
     ) {
+        // Domyślny adres wysyłki klienta (reguła w $lib/algorytmy/adresy.js).
         const domyslnyAdres = zamowienie.klient
-          ? zamowienie.klient.adresy.find(function (a) {
-              return a.isDefault === true;
-            }) || zamowienie.klient.adresy[0]
+          ? wybierzDomyslnyAdres(zamowienie.klient.adresy)
           : null;
         const przesylka = tworzDomyslnaPrzesylke(zamowienie.produkty);
         przesylka.adres = domyslnyAdres;

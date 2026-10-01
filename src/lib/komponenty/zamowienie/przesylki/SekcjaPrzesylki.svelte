@@ -4,6 +4,7 @@
   import TabelaPrzesylek from "./TabelaPrzesylek.svelte";
   import SzczegolyPrzesylki from "./SzczegolyPrzesylki.svelte";
   import WyborAdresu from "./WyborAdresu.svelte";
+  import { wybierzDomyslnyAdres } from "$lib/algorytmy/adresy.js";
 
   const { dane, zaktualizuj } = getContext("zamowienie");
 
@@ -150,10 +151,8 @@
     // Gdy zmieniamy typ dostawy na 'kurier' — przywracamy domyślny adres klienta.
     // Przy innych typach adres jest już resetowany przez TabDostawa (adres: null).
     if (zmiany.typDostawy === "kurier" && dane().klient) {
-      const domyslnyAdres =
-        dane().klient.adresy.find(function (a) {
-          return a.typ === "domyslny";
-        }) || dane().klient.adresy[0];
+      // Domyślny adres wysyłki klienta (reguła w $lib/algorytmy/adresy.js).
+      const domyslnyAdres = wybierzDomyslnyAdres(dane().klient.adresy);
       zmiany = Object.assign({}, zmiany, { adres: domyslnyAdres });
     }
     const nowe = dane().przesylki.map(function (p) {
