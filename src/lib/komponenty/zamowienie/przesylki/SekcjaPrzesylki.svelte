@@ -4,6 +4,7 @@
   import TabelaPrzesylek from "./TabelaPrzesylek.svelte";
   import SzczegolyPrzesylki from "./SzczegolyPrzesylki.svelte";
   import WyborAdresu from "./WyborAdresu.svelte";
+  import PotwierdzenieDialog from "$lib/komponenty/PotwierdzenieDialog.svelte";
   import { wybierzDomyslnyAdres } from "$lib/algorytmy/adresy.js";
 
   const { dane, zaktualizuj } = getContext("zamowienie");
@@ -127,10 +128,59 @@
     panelWidoczny = true;
   }
 
-  // Usuwa przesyłkę. Zawsze zostaje przynajmniej jedna.
-  // TODO: dodać potwierdzenie usunięcia
-  function usunPrzesylke(id) {
+  // Potwierdzenie usunięcia przesyłki — przesyłka czekająca na decyzję
+  // użytkownika: { id, tresc }. null = okno zamknięte.
+  let doUsuniecia = $state(null);
+
+  // Czy przesyłka zawiera coś, co użytkownik straciłby przy usunięciu:
+  // przypisane ilości, pakowanie albo uwagi. Pustą usuwamy bez pytania
+  // (np. dodaną przez pomyłkę) — żeby nie klikać "Usuń" bez potrzeby.
+  function czyPrzesylkaMaZawartosc(przesylka) {
+    const maIlosci = przesylka.pozycje.some(function (p) {
+      return p.ilosc > 0;
+    });
+    const maPakowanie = przesylka.pakowanie.length > 0;
+    const maUwagi = (przesylka.uwagi || "").trim() !== "";
+    return maIlosci || maPakowanie || maUwagi;
+  }
+
+  // Prośba o usunięcie przesyłki — z kosza w nagłówku panelu albo z kosza
+  // przy ostatnim produkcie na liście "Co jedzie" (powod = "ostatniProdukt").
+  // Zawsze zostaje przynajmniej jedna przesyłka.
+  // Uwaga: kosz w nagłówku przekazuje jako argument zdarzenie kliknięcia,
+  // dlatego sprawdzamy dokładnie powod === "ostatniProdukt".
+  function usunPrzesylke(id, powod) {
     if (dane().przesylki.length <= 1) return;
+
+    const indeks = dane().przesylki.findIndex(function (p) {
+      return p.id === id;
+    });
+    if (indeks === -1) return;
+
+    if (!czyPrzesylkaMaZawartosc(dane().przesylki[indeks])) {
+      usunPrzesylkeTeraz(id);
+      return;
+    }
+
+    const numer = indeks + 1; // numeracja jak w tabeli i panelu ("Przesyłka 2")
+    doUsuniecia = {
+      id: id,
+      tresc:
+        powod === "ostatniProdukt"
+          ? `To ostatni produkt w przesyłce ${numer} — jego usunięcie usunie całą przesyłkę razem z adresem, pakowaniem i uwagami.`
+          : `Przesyłka ${numer} zostanie usunięta razem z adresem, pakowaniem i uwagami. Przypisane do niej ilości wrócą do kolumny „dostępne”.`,
+    };
+  }
+
+  // Użytkownik potwierdził w oknie — usuwamy.
+  function potwierdzUsuniecie() {
+    const id = doUsuniecia.id;
+    doUsuniecia = null;
+    usunPrzesylkeTeraz(id);
+  }
+
+  // Właściwe usunięcie przesyłki ze stanu (bez pytania).
+  function usunPrzesylkeTeraz(id) {
     const nowe = dane().przesylki.filter(function (p) {
       return p.id !== id;
     });
@@ -273,7 +323,7 @@
               onZmiana={(zmiany) => zaktualizujPrzesylke(przesylka.id, zmiany)}
               onZmianaIlosci={(produktId, ilosc) =>
                 zmienIloscWPrzesylce(przesylka.id, produktId, ilosc)}
-              onUsun={() => usunPrzesylke(przesylka.id)}
+              onUsun={(powod) => usunPrzesylke(przesylka.id, powod)}
               onZamknij={() => {
                 panelWidoczny = false;
                 aktywnaId = null;
@@ -300,4 +350,16 @@
   bind:otwarty={modalAdresuOtwarty}
   onWybor={(adres) =>
     zaktualizujPrzesylke(aktywnaIdPrzesylkiDlaModala, { adres })}
+/>
+
+<!-- Potwierdzenie usunięcia przesyłki -->
+<PotwierdzenieDialog
+  otwarty={doUsuniecia !== null}
+  tytul="Usunąć przesyłkę?"
+  tresc={doUsuniecia ? doUsuniecia.tresc : ""}
+  etykietaPotwierdz="Usuń przesyłkę"
+  onPotwierdz={potwierdzUsuniecie}
+  onAnuluj={() => {
+    doUsuniecia = null;
+  }}
 />

@@ -384,6 +384,9 @@ src/lib/komponenty/
                                 rozmiary: sm/md/lg; prop klasa dla dodatkowych klas CSS
   Toggle.svelte               — uniwersalny toggle, prop kolorAktywny (CSS var)
   WyborOpcji.svelte           — uniwersalny wybór opcji (radio buttons)
+  PotwierdzenieDialog.svelte  — uniwersalne okno potwierdzenia (Tailwind Plus "Simple alert");
+                                czysty komponent: otwarty, tytul, tresc, onPotwierdz, onAnuluj;
+                                Escape / tło = anuluj, Enter nie potwierdza
   WyborKlienta.svelte         — Command Palette wyszukiwania klienta; live search
                                 do API z debounce 300ms; po wyborze pobiera adresy
                                 klienta przez GET /api/klienci-adresy/:id
@@ -521,8 +524,9 @@ nawigacji albo po `invalidate()` / `invalidateAll()`. Strategia zależy od widok
   konfliktu (wersja zamówienia)
 - **Ochrona pracy** — ostrzeżenie o niezapisanych zmianach, bufor localStorage,
   autosave dla zapisanych zamówień (z retry)
-- **Przesyłki** — omówienie całej sekcji; m.in. kurierzy i paczki ze słowników
-  API, potwierdzenie usunięcia przesyłki
+- **Przesyłki** — omówienie całej sekcji; m.in. kurierzy i paczki ze słowników API
+- Potwierdzenie usunięcia produktu (produkt znika razem z pozycjami w przesyłkach) —
+  `PotwierdzenieDialog` jest gotowy
 - `WyborKlienta.svelte` — filtr po handlowcu (opiekunie)
 - Dodawanie adresu z poziomu zamówienia — „+ Nowy adres” w `WyborAdresu`
   (formularz w tym samym modalu, bez opuszczania zamówienia); propozycja: zapis

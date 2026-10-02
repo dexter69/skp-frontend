@@ -14,7 +14,8 @@
     onZmiana, // callback(zmiany) — aktualizuje dane przesyłki
     onZmianaIlosci, // callback(produkt_id, ilosc) — zmiana ilości produktu w przesyłce
     onOtworzWyborAdresu, // callback() — otwiera modal wyboru adresu (renderowany wyżej)
-    onUsunPrzesylke, // callback() — usuwa całą przesyłkę gdy ostatni produkt usunięty
+    onUsunPrzesylke, // callback("ostatniProdukt") — prośba o usunięcie całej przesyłki,
+                     // gdy usuwany jest jej ostatni produkt (rodzic pyta o potwierdzenie)
     czyJedynaPrzesylka,
   } = $props();
 
@@ -98,7 +99,7 @@
     if (ostatniProdukt && czyJedynaPrzesylka) return;
 
     if (ostatniProdukt) {
-      onUsunPrzesylke?.();
+      onUsunPrzesylke?.("ostatniProdukt");
     } else {
       onZmianaIlosci(produktId, 0);
     }

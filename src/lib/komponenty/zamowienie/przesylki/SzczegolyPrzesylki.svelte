@@ -19,7 +19,8 @@
     rozwiniety, // bool — czy panel jest w stanie rozwiniętym (duża wysokość)
     onZmiana, // callback(zmiany) — aktualizuje dane przesyłki
     onZmianaIlosci, // callback(produkt_id, ilosc) — zmiana ilości produktu w przesyłce
-    onUsun, // callback() — usuwa przesyłkę
+    onUsun, // callback(powod?) — prośba o usunięcie przesyłki; rodzic pyta o potwierdzenie
+            //   powod = "ostatniProdukt" gdy przyszło z listy "Co jedzie"
     onZamknij, // callback() — zamyka panel
     onRozwin, // callback() — przełącza między małym a dużym panelem
     onOtworzWyborAdresu, // callback() — otwiera modal wyboru adresu (renderowany wyżej)
