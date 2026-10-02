@@ -2,56 +2,69 @@
   // WyborAdresu — modal wyboru adresu dostawy z książki adresowej klienta.
   // Struktura wzorowana na WyborKlienta (Command Palette).
   // Lista adresów widoczna od razu — wyszukiwanie filtruje na żywo.
-  // Filtry typów adresów generowane dynamicznie z dostępnych typów.
+  //
+  // Co pokazujemy:
+  // — najpierw adresy wysyłki (isWysylka) — to z nich wybiera się adres przesyłki,
+  //   z oznaczeniami "Domyślny" i "Siedziba";
+  // — pozostałe adresy klienta są ukryte za przyciskiem "+N innych adresów — pokaż".
+  //   Nie chowamy ich całkiem: handlowiec, który nie zna klienta (np. zastępstwo),
+  //   musi zobaczyć, że adres już jest w książce — inaczej doda go drugi raz.
+  //   Takie adresy też można wybrać (są oznaczone "Nie do wysyłki").
+  // Gdy klient nie ma żadnego adresu wysyłki — od razu pokazujemy wszystkie.
 
   let {
-    adresy = [],         // lista adresów klienta — tablica obiektów adresu
+    adresy = [],         // lista adresów klienta — tablica obiektów adresu (format API)
     wybranyAdres = null, // aktualnie wybrany adres — podświetlony na liście
     otwarty = $bindable(false),
     onWybor,             // callback(adres) — wywoływany po wyborze
   } = $props();
 
   let fraza = $state('');
-  let aktywnyFiltr = $state(null); // null = wszystkie typy
+  let pokazPozostale = $state(false); // czy pokazać adresy spoza wysyłki
 
-  // Unikalne typy adresów z listy — do generowania pill-buttonów filtrów.
-  // Dynamiczne — nie hardkodujemy typów, bo będą pochodzić z API.
-  const dostepneTypy = $derived(
-    [...new Set(adresy.map(function(a) { return a.typ; }))]
-  );
+  const adresyWysylki = $derived(adresy.filter(function(a) { return a.isWysylka; }));
+  const pozostaleAdresy = $derived(adresy.filter(function(a) { return !a.isWysylka; }));
 
-  // Filtrowanie po frazie (min. 2 znaki) i aktywnym typie.
-  // Gdy fraza krótsza niż 2 znaki — pokazujemy wszystkie (tylko filtr typem).
+  // Pozostałe adresy widoczne po kliknięciu albo gdy nie ma żadnego adresu wysyłki.
+  const widacPozostale = $derived(pokazPozostale || adresyWysylki.length === 0);
+
+  // Filtrowanie po frazie (min. 2 znaki): nazwa, ulica, miasto.
+  // Gdy fraza krótsza niż 2 znaki — pokazujemy wszystkie widoczne adresy.
   // API zwraca null dla pustych pól — stąd (a.nazwa || '') przed toLowerCase().
   const widoczneAdresy = $derived(
-    adresy.filter(function(a) {
-      const f = fraza.toLowerCase();
-      const pasujeFraza = fraza.length < 2 ||
-        (a.nazwa || '').toLowerCase().includes(f) ||
-        (a.miasto || '').toLowerCase().includes(f);
-      const pasujeTyp = aktywnyFiltr === null || a.typ === aktywnyFiltr;
-      return pasujeFraza && pasujeTyp;
-    })
+    (widacPozostale ? adresyWysylki.concat(pozostaleAdresy) : adresyWysylki)
+      .filter(function(a) {
+        if (fraza.length < 2) return true;
+        const f = fraza.toLowerCase();
+        return (a.nazwa || '').toLowerCase().includes(f) ||
+          (a.ulica || '').toLowerCase().includes(f) ||
+          (a.miasto || '').toLowerCase().includes(f);
+      })
   );
 
-  // Etykiety typów adresów — wyświetlane na pill-buttonach filtrów i przy wierszach.
-  // Docelowo mogą przyjść z API jako słownik — wtedy zastąpić ten obiekt.
-  const ETYKIETY_TYPOW = {
-    domyslny: 'Domyślny',
-    dostawa: 'Dostawa',
-    do_faktury: 'Do faktury',
-    siedziba: 'Siedziba',
-  };
+  // Tekst przycisku dla ukrytych adresów — z polską odmianą liczebnika:
+  // 1 inny adres, 2–4 inne adresy (bez 12–14), 5+ innych adresów.
+  function tekstPozostalych(n) {
+    const reszta10 = n % 10;
+    const reszta100 = n % 100;
+    if (n === 1) return '+1 inny adres klienta (nie do wysyłki) — pokaż';
+    if (reszta10 >= 2 && reszta10 <= 4 && (reszta100 < 12 || reszta100 > 14)) {
+      return '+' + n + ' inne adresy klienta (nie do wysyłki) — pokaż';
+    }
+    return '+' + n + ' innych adresów klienta (nie do wysyłki) — pokaż';
+  }
 
-  // Zwraca etykietę typu lub sam klucz gdy typ nieznany (przyszłe typy z API).
-  function etykietaTypu(typ) {
-    return ETYKIETY_TYPOW[typ] || typ;
+  // Druga linia wiersza: "ulica, kod miasto" — puste części pomijamy,
+  // żeby nie było np. ", 62-800 Kalisz" przy braku ulicy.
+  function liniaAdresu(adres) {
+    const miejscowosc = [adres.kod, adres.miasto].filter(Boolean).join(' ');
+    return [adres.ulica, miejscowosc].filter(Boolean).join(', ');
   }
 
   function zamknij() {
     otwarty = false;
     fraza = '';
-    aktywnyFiltr = null;
+    pokazPozostale = false;
   }
 
   function wybierz(adres) {
@@ -84,7 +97,7 @@
           type="text"
           autofocus
           bind:value={fraza}
-          placeholder="Szukaj po nazwie lub mieście..."
+          placeholder="Szukaj po nazwie, ulicy lub mieście..."
           class="col-start-1 row-start-1 h-12 w-full pr-4 pl-11 text-sm text-text-primary outline-hidden placeholder:text-text-muted"
         />
         <svg
@@ -101,39 +114,6 @@
         </svg>
       </div>
 
-      <!-- Filtry typów — widoczne tylko gdy dostępny więcej niż jeden typ -->
-      {#if dostepneTypy.length > 1}
-        <div class="flex flex-wrap gap-2 border-b border-border-default px-4 py-2.5">
-          <label class="group relative flex items-center justify-center rounded-md border px-3 py-1.5 cursor-pointer transition-colors
-            {aktywnyFiltr === null ? 'border-accent bg-accent' : 'border-border-default bg-white hover:border-border-strong'}">
-            <input
-              type="radio"
-              checked={aktywnyFiltr === null}
-              onchange={() => { aktywnyFiltr = null; }}
-              class="absolute inset-0 appearance-none focus:outline-none cursor-pointer"
-            />
-            <span class="text-sm font-medium {aktywnyFiltr === null ? 'text-white' : 'text-text-secondary'}">
-              Wszystkie
-            </span>
-          </label>
-
-          {#each dostepneTypy as typ}
-            <label class="group relative flex items-center justify-center rounded-md border px-3 py-1.5 cursor-pointer transition-colors
-              {aktywnyFiltr === typ ? 'border-accent bg-accent' : 'border-border-default bg-white hover:border-border-strong'}">
-              <input
-                type="radio"
-                checked={aktywnyFiltr === typ}
-                onchange={() => { aktywnyFiltr = typ; }}
-                class="absolute inset-0 appearance-none focus:outline-none cursor-pointer"
-              />
-              <span class="text-sm font-medium {aktywnyFiltr === typ ? 'text-white' : 'text-text-secondary'}">
-                {etykietaTypu(typ)}
-              </span>
-            </label>
-          {/each}
-        </div>
-      {/if}
-
       <!-- Lista adresów -->
       <ul class="max-h-80 overflow-y-auto py-2">
         {#if widoczneAdresy.length === 0}
@@ -149,20 +129,43 @@
                     ? 'bg-accent/10'
                     : 'hover:bg-bg-primary'}"
               >
-                <!-- Linia 1: nazwa + etykieta typu po prawej -->
+                <!-- Linia 1: nazwa + oznaczenia po prawej (tylko te, które mają znaczenie) -->
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-sm font-medium text-text-primary">{adres.nazwa}</span>
-                  <span class="shrink-0 text-xs text-text-muted">{etykietaTypu(adres.typ)}</span>
+                  <span class="flex shrink-0 gap-2 text-xs">
+                    {#if adres.isDefault}
+                      <span class="font-medium text-accent">Domyślny</span>
+                    {/if}
+                    {#if adres.isSiedziba}
+                      <span class="text-text-muted">Siedziba</span>
+                    {/if}
+                    {#if !adres.isWysylka}
+                      <span class="text-text-muted italic">Nie do wysyłki</span>
+                    {/if}
+                  </span>
                 </div>
                 <!-- Linia 2: ulica, kod pocztowy, miasto -->
                 <p class="text-sm text-text-secondary">
-                  {adres.ulica}, {adres.kod} {adres.miasto}
+                  {liniaAdresu(adres)}
                 </p>
               </button>
             </li>
           {/each}
         {/if}
       </ul>
+
+      <!-- Ukryte adresy spoza wysyłki — przycisk, żeby je pokazać -->
+      {#if !widacPozostale && pozostaleAdresy.length > 0}
+        <div class="border-t border-border-default px-4 py-2.5">
+          <button
+            type="button"
+            onclick={() => { pokazPozostale = true; }}
+            class="text-sm text-text-secondary hover:text-text-primary transition-colors"
+          >
+            {tekstPozostalych(pozostaleAdresy.length)}
+          </button>
+        </div>
+      {/if}
 
     </div>
   </div>

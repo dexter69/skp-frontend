@@ -289,6 +289,10 @@ idą bezpośrednio Node.js → CakePHP.
 - Autosave tylko dla zamówień, które mają id; niezapisane nowe zamówienie
   chroni bufor localStorage + ostrzeżenie "niezapisane zmiany" przy wyjściu
 - "Szkic" = zapisane zamówienie bez numeru; "Niezapisane" = jeszcze nie w bazie
+- Wykrywanie konfliktu przy zapisie (optymistyczna kontrola współbieżności):
+  front pamięta wersję zamówienia z chwili wczytania (np. `modified`), backend
+  odrzuca zapis, gdy w bazie jest już inna — komunikat zamiast cichego
+  nadpisania cudzych zmian
 
 ### Sekcje formularza
 - Sekcja 1: Klient i produkty
@@ -394,9 +398,10 @@ src/lib/komponenty/
                                 typ klienta (nowy/stały) w prawym dolnym rogu
                                 przez WyborOpcji (absolutnie pozycjonowany)
     WyborAdresu.svelte        — modal wyboru adresu dostawy z książki adresowej;
-                                lista od razu widoczna, filtry typów jako pill-buttony.
-                                ZNANY BŁĄD: filtry czytają pole `typ` (format mock),
-                                API zwraca flagi isWysylka/isFaktura/isSiedziba
+                                najpierw adresy wysyłki (oznaczenia Domyślny, Siedziba),
+                                pozostałe ukryte za "+N innych adresów — pokaż" (można
+                                je wybrać — żeby nie dublować adresów); szukanie po
+                                nazwie, ulicy i mieście
     MetadaneZamowienia.svelte — data realizacji, ekspresowe (toggle)
     Platnosci.svelte          — logika płatności (przedpłata + płatność po)
     NotatkaZamowienia.svelte  — taby: "Dane do faktury" / "Uwagi";
@@ -462,6 +467,19 @@ src/lib/komponenty/
 - Nowe widoki SvelteKit żyją pod /app/ obok starego CakePHP
 - Projektujemy tak by nie blokować późniejszej pełnej migracji UI do SvelteKit
 
+### Aktualność danych na ekranie
+Problem starej aplikacji: użytkownik widzi nieaktualny stan i działa na jego
+podstawie. SvelteKit sam nie śledzi bazy — `load()` działa tylko przy
+nawigacji albo po `invalidate()` / `invalidateAll()`. Strategia zależy od widoku:
+- **Formularze edycji** — dane z chwili otwarcia (kopia robocza użytkownika),
+  NIE odświeżamy automatycznie (nadpisałoby niezapisane zmiany); zabezpieczenie
+  to wykrywanie konfliktu przy zapisie. Później opcjonalnie: po powrocie do karty
+  sprawdzenie wersji w tle i komunikat „zamówienie zmienione — odśwież”
+- **Widoki do przeglądania** (listy, produkcja) — odświeżanie po powrocie
+  do karty (`visibilitychange`), a gdzie liczy się bieżący stan — dodatkowo
+  odpytywanie co kilkanaście sekund
+- Bez SSE / WebSocketów na razie (CakePHP 2.4 + PHP 5.6 + Apache słabo się nadaje)
+
 ---
 
 ## Stan na dziś (wrzesień 2026)
@@ -499,13 +517,17 @@ src/lib/komponenty/
 
 ### Do zrobienia (aktywna praca)
 - **Zapis zamówienia** — endpoint tworzący/aktualizujący, mapowanie ujemnych id,
-  przejście `nowe` → `/zamowienia/[id]/edycja`, numer i szkic
+  przejście `nowe` → `/zamowienia/[id]/edycja`, numer i szkic, wykrywanie
+  konfliktu (wersja zamówienia)
 - **Ochrona pracy** — ostrzeżenie o niezapisanych zmianach, bufor localStorage,
   autosave dla zapisanych zamówień (z retry)
-- **Przesyłki** — omówienie całej sekcji; m.in. filtry typów w `WyborAdresu`,
-  kurierzy i paczki ze słowników API, potwierdzenie usunięcia przesyłki
+- **Przesyłki** — omówienie całej sekcji; m.in. kurierzy i paczki ze słowników
+  API, potwierdzenie usunięcia przesyłki
 - `WyborKlienta.svelte` — filtr po handlowcu (opiekunie)
-- Obsługa adresów w UI — zapis nowego adresu do książki adresowej
+- Dodawanie adresu z poziomu zamówienia — „+ Nowy adres” w `WyborAdresu`
+  (formularz w tym samym modalu, bez opuszczania zamówienia); propozycja: zapis
+  od razu do książki adresowej (adres to cecha klienta, nie zamówienia);
+  później podpowiedź przeciw duplikatom („czy chodzi o ten adres?”)
 - Wdrożenie — adapter-node, base `/app`, osobny adres backendu dla fetchy
   server-side (pusty `BACKEND_URL` nie zadziała w Node), próba generalna
   migracji na zrzucie produkcji
