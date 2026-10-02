@@ -14,6 +14,7 @@
 
   let {
     przesylka, // obiekt przesyłki { id, nazwa, typDostawy, adres, kurier, uwagi, pozycje }
+    maKlienta, // bool — czy zamówienie ma wybranego klienta (od tego zależy wybór adresu)
     produkty, // lista wszystkich produktów zamówienia
     numerPrzesylki, // numer porządkowy (1, 2, ...) — wyświetlany subtelnie w nagłówku
     rozwiniety, // bool — czy panel jest w stanie rozwiniętym (duża wysokość)
@@ -123,6 +124,7 @@
     {#if aktywnyTab === "dostawa"}
       <TabDostawa
         {przesylka}
+        {maKlienta}
         {produkty}
         {styleKolumn}
         {onZmiana}

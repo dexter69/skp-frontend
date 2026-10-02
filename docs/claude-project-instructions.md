@@ -449,6 +449,15 @@ src/lib/komponenty/
 - Typy przesyłek: kurier / magazyn / odbior / kurier_klienta
 - Zakładka "Przesyłki" jest zawsze dostępna — ostrzeżenie tylko gdy produkt
   wymaga perso ale nie ma jeszcze zdefiniowanych przepisów perso
+- Nowa przesyłka (także dodana przyciskiem) dostaje domyślny adres klienta
+  (`wybierzDomyslnyAdres()`); karta adresu rozróżnia: adres / brak adresu
+  (klikalna) / brak klienta (nieaktywna)
+- Dodatki spoza zamówienia (próbki, katalogi) jadące z produktami — w uwagach
+  przesyłki. Przesyłka z SAMYMI dodatkami — NIEOBSŁUGIWANA: przesyłka łączy się
+  z zamówieniem tylko przez produkty, więc bez produktów nie byłaby widoczna
+  w zamówieniu. Możliwe drogi: dodatek jako pozycja zamówienia z ceną 0
+  (sprawdzić skutek: szkielet w starej tabeli `cards`) albo rozszerzenie modelu —
+  wrócić przy temacie przesyłek wspólnych dla kilku zamówień
 
 ### Pakowanie przesyłek
 

@@ -105,11 +105,16 @@
       return p.id < min ? p.id : min;
     }, 0);
     const noweId = minId - 1;
+    // Nowa przesyłka jest kurierska — dostaje domyślny adres wysyłki klienta
+    // (reguła w $lib/algorytmy/adresy.js); bez klienta — brak adresu.
+    const domyslnyAdres = dane().klient
+      ? wybierzDomyslnyAdres(dane().klient.adresy)
+      : null;
     const nowaPrzesylka = {
       id: noweId,
       nazwa: null,
       typDostawy: "kurier",
-      adres: null,
+      adres: domyslnyAdres,
       kurier: null,
       uwagi: "",
       palety: false,
@@ -317,6 +322,7 @@
           {#if przesylka.id === aktywnaId}
             <SzczegolyPrzesylki
               {przesylka}
+              maKlienta={!!dane().klient}
               produkty={dane().produkty}
               numerPrzesylki={i + 1}
               rozwiniety={panelRozwiniety}

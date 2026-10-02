@@ -9,7 +9,7 @@
   let {
     przesylka, // obiekt przesyłki { typDostawy, adres, kurier, pozycje }
     produkty, // lista wszystkich produktów zamówienia — do wyświetlenia nazw
-    adresy,
+    maKlienta, // bool — czy zamówienie ma klienta; bez klienta nie ma z czego wybrać adresu
     styleKolumn, // CSS variables dla proporcji kolumn (--col-lewa, --col-prawa)
     onZmiana, // callback(zmiany) — aktualizuje dane przesyłki
     onZmianaIlosci, // callback(produkt_id, ilosc) — zmiana ilości produktu w przesyłce
@@ -136,8 +136,6 @@
       </div>
     {/if}
 
-    <!-- zastępujemy drugi {#if czyWyborKuriera} blok z adresem -->
-
     {#if czyWyborKuriera}
       <div class="flex flex-col gap-1">
         {#if przesylka.adres}
@@ -163,8 +161,22 @@
               {przesylka.adres.miasto}
             </p>
           </div>
+        {:else if maKlienta}
+          <!-- Klient wybrany, ale przesyłka nie ma adresu (np. klient bez adresów) —
+               karta klikalna, otwiera WyborAdresu -->
+          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+          <div
+            role="button"
+            tabindex="-1"
+            onclick={() => onOtworzWyborAdresu?.()}
+            class="rounded-lg border border-dashed border-border-default bg-white p-3 cursor-pointer hover:bg-bg-primary transition-colors focus:outline-none"
+          >
+            <p class="text-sm italic text-text-muted">
+              Nie wybrano adresu — kliknij, aby wybrać
+            </p>
+          </div>
         {:else}
-          <!-- Brak klienta — karta nieaktywna -->
+          <!-- Brak klienta — karta nieaktywna (nie ma z czego wybrać adresu) -->
           <div
             class="rounded-lg bg-white shadow-sm p-3 opacity-40 cursor-default"
           >
