@@ -42,7 +42,7 @@ function tworzDomyslnaPrzesylke(produkty) {
     adres: null,
     // Kurier — null gdy typ != 'kurier' lub nie wybrano jeszcze firmy.
     // Wartość z listy kurierów z API (np. 'ups', 'dhl').
-    kurier: null,
+    kurier: null, // id kuriera ze słownika (couriers.id) albo null
     uwagi: "",
     // Pakowanie: TODO
     pozycje: produkty.map(function (p) {

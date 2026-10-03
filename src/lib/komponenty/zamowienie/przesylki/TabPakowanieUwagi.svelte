@@ -18,10 +18,14 @@
     styleKolumn, // CSS variables dla proporcji kolumn (--col-lewa, --col-prawa)
     onZmiana, // callback(zmiany) — aktualizuje dane przesyłki
     iloscDoSpakowania, // suma ilości wszystkich pozycji w przesyłce
+    rozmiaryPaczek = [], // pojemności standardowych paczek ze słownika API, np. [5000, 3000, ...]
   } = $props();
 
-  // Rozmiary standardowych paczek — docelowo z API.
-  const rozmiary = DOMYSLNE_ROZMIARY;
+  // Rozmiary standardowych paczek ze słownika (GET /api/slowniki).
+  // Gdy słownik nie dotarł (błąd API) — rozmiary domyślne, żeby pakowanie działało.
+  const rozmiary = $derived(
+    rozmiaryPaczek.length > 0 ? rozmiaryPaczek : DOMYSLNE_ROZMIARY,
+  );
 
   // Tryb palet — gdy true, tabela paczek znika.
   const czyPalety = $derived(przesylka.palety ?? false);

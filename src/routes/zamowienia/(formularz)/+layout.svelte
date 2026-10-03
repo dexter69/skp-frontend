@@ -67,6 +67,10 @@
   const wyczyscSidebar = sidebar.ustawKontekst(nawigacjaSekcji);
   onDestroy(wyczyscSidebar);
 
+  // Słowniki (kurierzy, rozmiary paczek) z load() — tylko do odczytu,
+  // nie zmieniają się w trakcie edycji, więc zwykły obiekt, nie stan.
+  setContext("slowniki", data.slowniki);
+
   setContext("zamowienie", {
     aktywnaSekcja: () => aktywnaSekcja,
     dane: () => zamowienie,

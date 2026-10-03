@@ -9,6 +9,13 @@
 
   const { dane, zaktualizuj } = getContext("zamowienie");
 
+  // Słowniki z (formularz)/+layout.svelte — kurierzy i rozmiary paczek.
+  // Rozmiary przekazujemy dalej jako same pojemności — tego oczekuje pakowanie.
+  const slowniki = getContext("slowniki");
+  const pojemnosciPaczek = slowniki.rozmiaryPaczek.map(function (r) {
+    return r.pojemnosc;
+  });
+
   // id aktywnej przesyłki — która kolumna jest wyróżniona i której szczegóły są widoczne.
   let aktywnaId = $state(dane().przesylki[0]?.id ?? null);
 
@@ -323,6 +330,8 @@
             <SzczegolyPrzesylki
               {przesylka}
               maKlienta={!!dane().klient}
+              kurierzy={slowniki.kurierzy}
+              rozmiaryPaczek={pojemnosciPaczek}
               produkty={dane().produkty}
               numerPrzesylki={i + 1}
               rozwiniety={panelRozwiniety}

@@ -172,6 +172,7 @@ export function pakujNieMieszaj(produkty, rozmiary) {
   return scalWpisy(wynik);
 }
 
-// Domyślne rozmiary paczek — używane gdy API nie zwróci rozmiarów.
+// Domyślne rozmiary paczek — tylko awaryjnie, gdy słownik z API
+// (GET /api/slowniki) nie dotrze. Normalnie rozmiary pochodzą z package_types.
 // Docelowo zastąpione przez dane z API.
 export const DOMYSLNE_ROZMIARY = [5000, 3000, 2000, 1000];

@@ -15,6 +15,8 @@
   let {
     przesylka, // obiekt przesyłki { id, nazwa, typDostawy, adres, kurier, uwagi, pozycje }
     maKlienta, // bool — czy zamówienie ma wybranego klienta (od tego zależy wybór adresu)
+    kurierzy, // słownik kurierów [{ id, nazwa, palety }] — dla TabDostawa
+    rozmiaryPaczek, // pojemności standardowych paczek, np. [5000, 3000, ...] — dla TabPakowanieUwagi
     produkty, // lista wszystkich produktów zamówienia
     numerPrzesylki, // numer porządkowy (1, 2, ...) — wyświetlany subtelnie w nagłówku
     rozwiniety, // bool — czy panel jest w stanie rozwiniętym (duża wysokość)
@@ -125,6 +127,7 @@
       <TabDostawa
         {przesylka}
         {maKlienta}
+        {kurierzy}
         {produkty}
         {styleKolumn}
         {onZmiana}
@@ -136,9 +139,9 @@
     {/if}
 
     {#if aktywnyTab === "szczegoly"}
-      <!-- <TabPakowanieUwagi {przesylka} {styleKolumn} {onZmiana} /> -->
       <TabPakowanieUwagi
         {przesylka}
+        {rozmiaryPaczek}
         {styleKolumn}
         {onZmiana}
         iloscDoSpakowania={przesylka.pozycje.reduce(function (s, p) {

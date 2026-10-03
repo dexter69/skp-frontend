@@ -447,6 +447,11 @@ src/lib/komponenty/
 - Przesyłka nie jest bezpośrednio powiązana z zamówieniem — jest powiązana
   z produktami (dzięki temu jedna przesyłka może zawierać produkty z różnych zamówień)
 - Typy przesyłek: kurier / magazyn / odbior / kurier_klienta
+- Kurierzy ze słownika API (`GET /api/slowniki`, tabela `couriers`, kolejność
+  z kolumny `kolejnosc`); słowniki pobiera `load()` formularza i udostępnia
+  przez kontekst `slowniki`. Przewoźnik paletowy (`couriers.palety = 1`, np. Raben,
+  DB Schenker) po wybraniu włącza tryb palet; zmiana kuriera palet nie wyłącza.
+  "Inny" — gdy kuriera nie ma na liście (szczegóły w uwagach)
 - Zakładka "Przesyłki" jest zawsze dostępna — ostrzeżenie tylko gdy produkt
   wymaga perso ale nie ma jeszcze zdefiniowanych przepisów perso
 - Nowa przesyłka (także dodana przyciskiem) dostaje domyślny adres klienta
@@ -469,10 +474,12 @@ src/lib/komponenty/
 - `pakujNieMieszaj(produkty, rozmiary)` — przycisk "Nie mieszaj":
   pakuje każdy produkt osobno; jeśli produkt ≤ największy rozmiar standardowy
   i baseline > 1 paczka — używa jednej niestandardowej paczki
-- Rozmiary standardowych paczek docelowo z API; na razie `DOMYSLNE_ROZMIARY = [5000, 3000, 2000, 1000]`
+- Rozmiary standardowych paczek ze słownika API (`GET /api/slowniki`, tabela `package_types`);
+  `DOMYSLNE_ROZMIARY` w `pakowanie.js` tylko awaryjnie, gdy słownik nie dotrze
 - Paczka niestandardowa nigdy nie może być większa niż największy rozmiar standardowy
 - "Nie mieszaj" wpisuje notatkę do uwag przesyłki (prepend); "Przelicz" usuwa tę notatkę
-- Struktura przesyłki w stanie: `{ id, nazwa, typDostawy, adres, kurier, uwagi, palety, pakowanie, pozycje }`
+- Struktura przesyłki w stanie: `{ id, nazwa, typDostawy, adres, kurier, uwagi, palety, pakowanie, pozycje }`;
+  `kurier` = id kuriera ze słownika (`couriers.id`) albo null
   gdzie `pakowanie: [{ pojemnosc, ilosc, niestandardowa }]`
 
 ### Nawigacja w aplikacji
@@ -502,6 +509,7 @@ nawigacji albo po `invalidate()` / `invalidateAll()`. Strategia zależy od widok
 - `GET /api/klienci/szukaj?fraza=...` — zgodne z `ONLY_FULL_GROUP_BY`,
   deterministyczny wybór siedziby, opiekun, czyszczenie tekstów
 - `GET /api/klienci-adresy/:id` — adresy w formacie wspólnym (`kod`, `vatKraj`, `kraj`)
+- `GET /api/slowniki` — aktywni kurierzy i rozmiary paczek
 - `POST /api/zamowienia/dodaj` — istnieje w backendzie, NIEUŻYWANY przez nowy UI
   (do usunięcia przy budowie zapisu)
 - `/zamowienia/nowe` — pusty formularz bez rekordu w bazie
@@ -524,6 +532,8 @@ nawigacji albo po `invalidate()` / `invalidateAll()`. Strategia zależy od widok
 - `006_orders_ui_version.sql` — pole ui_version w orders (DEFAULT 1 = stary UI, 2 = nowy UI)
 - `007_indeksy_wyszukiwanie_klientow.sql` — indeksy na customers i customer_addresses;
   czas wyszukiwania z 6300ms → 35ms
+- `008_couriers_dane_i_kolejnosc.sql` — słownik kurierów: kolumny kolejnosc
+  i palety + dane (UPS … Inny; Raben i DB Schenker paletowi)
 - Sprawdzone na produkcji: brak dat `0000-00-00` jako wartości domyślnych kolumn
   i w `addresses` (migracja 004 i ALTER TABLE bezpieczne pod tym względem)
 
@@ -533,7 +543,9 @@ nawigacji albo po `invalidate()` / `invalidateAll()`. Strategia zależy od widok
   konfliktu (wersja zamówienia)
 - **Ochrona pracy** — ostrzeżenie o niezapisanych zmianach, bufor localStorage,
   autosave dla zapisanych zamówień (z retry)
-- **Przesyłki** — omówienie całej sekcji; m.in. kurierzy i paczki ze słowników API
+- **Przesyłki** — tematy do przemyślenia: kontrola ilości (blokada czy ostrzeżenie),
+  przesyłki wspólne dla kilku zamówień, numer listu przewozowego, statusy,
+  etykiety, nazwa przesyłki
 - Potwierdzenie usunięcia produktu (produkt znika razem z pozycjami w przesyłkach) —
   `PotwierdzenieDialog` jest gotowy
 - `WyborKlienta.svelte` — filtr po handlowcu (opiekunie)

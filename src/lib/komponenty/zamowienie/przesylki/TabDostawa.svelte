@@ -10,6 +10,7 @@
     przesylka, // obiekt przesyłki { typDostawy, adres, kurier, pozycje }
     produkty, // lista wszystkich produktów zamówienia — do wyświetlenia nazw
     maKlienta, // bool — czy zamówienie ma klienta; bez klienta nie ma z czego wybrać adresu
+    kurierzy = [], // słownik kurierów z API [{ id, nazwa, palety }] — aktywni, w kolejności z bazy
     styleKolumn, // CSS variables dla proporcji kolumn (--col-lewa, --col-prawa)
     onZmiana, // callback(zmiany) — aktualizuje dane przesyłki
     onZmianaIlosci, // callback(produkt_id, ilosc) — zmiana ilości produktu w przesyłce
@@ -30,15 +31,35 @@
     { id: "kurier_klienta", label: "Kurier klienta" },
   ];
 
-  // Lista kurierów — docelowo z API, na razie mock.
-  const KURIERZY = [
-    { value: "ups", label: "UPS" },
-    { value: "dhl", label: "DHL" },
-    { value: "dpd", label: "DPD" },
-    { value: "fedex", label: "FedEx" },
-    { value: "inpost", label: "InPost" },
-    { value: "nietypowy", label: "Nietypowy" },
-  ];
+  // Opcje listy kurierów. Słownik zawiera tylko aktywnych — gdyby zapisana
+  // przesyłka miała kuriera, który został później dezaktywowany, dokładamy
+  // go na koniec listy, żeby wybór nie zniknął po cichu (archiwum się nie psuje).
+  const opcjeKurierow = $derived(
+    przesylka.kurier == null ||
+      kurierzy.some(function (k) {
+        return k.id === przesylka.kurier;
+      })
+      ? kurierzy
+      : kurierzy.concat([
+          { id: przesylka.kurier, nazwa: "Kurier nieaktywny", palety: false },
+        ]),
+  );
+
+  // Wybór kuriera — przesyłka trzyma id kuriera (liczba, jak couriers.id w bazie).
+  // Kurier paletowy (palety: true w słowniku) włącza tryb palet.
+  // Zmiana na innego kuriera palet NIE wyłącza — użytkownik mógł je włączyć
+  // świadomie (np. paleta wysyłana zwykłym kurierem).
+  function zmienKuriera(wartosc) {
+    const id = wartosc === "" ? null : Number(wartosc);
+    const kurier = kurierzy.find(function (k) {
+      return k.id === id;
+    });
+    if (kurier && kurier.palety) {
+      onZmiana({ kurier: id, palety: true });
+    } else {
+      onZmiana({ kurier: id });
+    }
+  }
 
   // Czy typ dostawy wymaga wyboru kuriera?
   const czyWyborKuriera = $derived(przesylka.typDostawy === "kurier");
@@ -123,16 +144,23 @@
         <p class="text-xs font-medium text-text-secondary">Firma kurierska</p>
         <select
           value={przesylka.kurier ?? ""}
-          onchange={(e) => onZmiana({ kurier: e.target.value || null })}
+          onchange={(e) => zmienKuriera(e.target.value)}
           class="rounded border border-input-border bg-input-bg px-2 py-1.5
                  text-sm text-input-text
                  focus:outline-none focus:border-border-focus"
         >
           <option value="">— wybierz —</option>
-          {#each KURIERZY as k}
-            <option value={k.value}>{k.label}</option>
+          {#each opcjeKurierow as k}
+            <option value={k.id}>{k.nazwa}</option>
           {/each}
         </select>
+        <!-- Tryb palet ustawia się w innej zakładce — informacja, żeby zmiana
+             (np. automatyczna po wyborze przewoźnika paletowego) nie umknęła -->
+        {#if przesylka.palety}
+          <p class="text-xs text-text-muted">
+            Tryb palet włączony (zakładka „Pakowanie i uwagi”)
+          </p>
+        {/if}
       </div>
     {/if}
 
